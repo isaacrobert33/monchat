@@ -42,10 +42,13 @@ import ListItem from "./ListItem.svelte";
         margin: 0;
         height: 100%;
         padding: 10px 0;
+        padding-bottom: 60px;
         background-color: #111b21;
         margin-top: 50px;
         position: fixed;
-        overflow: auto;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(240, 255, 255, 0.2) transparent;
         border-right: 0.5px solid rgba(255, 255, 255, 0.5);
     }
 
@@ -60,6 +63,7 @@ import ListItem from "./ListItem.svelte";
         left: 0;
         z-index: 2;
         position: fixed;
+        overflow: hidden;
     }
     .profile-img {
         width: 40px;

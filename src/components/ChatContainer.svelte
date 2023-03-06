@@ -1,6 +1,7 @@
 <script>
     import { each } from "svelte/internal";
     import ChatCard from "./ChatCard.svelte";
+    export let chat_recipient_id = '';
     export let chat_profile_img = './assets/user.svg';
     export let chat_profile_name = "Mi Padre";
     export let chat_profile_status = "Online";
@@ -23,6 +24,11 @@
         {msg: "Hello", msg_time: "12:00", direction: "me", read_status: false},
         {msg: "Hello", msg_time: "12:00", direction: "me", read_status: null},
     ];
+    let socket_url = `ws://${location.host}/ws/chat/${chat_recipient_id}`;
+    let chat_socket = new WebSocket(socket_url);
+    chat_socket.onmessage = function(event) {
+
+    }
 </script>
 
 <div class="chats-container">

@@ -69,7 +69,7 @@
 		<Login on:login={handleLogin} />
 	{/if}
 	{#if user_data.user_name}
-		<ListContainer chat_list={chat_list} profile_img={`./profile_assets/${user_data.user_icon}`} on:chatclick={openChat}/>
+		<ListContainer chat_list={chat_list} profile_img={`./profile_assets/${user_data.user_icon}`} user_name={user_data.user_name} on:chatclick={openChat}/>
 	{/if}
 	{#if openedChatData.msg_recipient}
 		<ChatContainer user_id={user_id} chat_recipient_id={ openedChatData.direction == "outbound" ? openedChatData.msg_recipient.user_name: openedChatData.msg_sender.user_name } chat_profile_name={ openedChatData.direction == "outbound" ? openedChatData.msg_recipient.user_name: openedChatData.msg_sender.user_name } conversation_list={conversations}  />

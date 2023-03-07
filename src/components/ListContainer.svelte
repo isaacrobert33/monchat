@@ -2,9 +2,12 @@
     import { each } from "svelte/internal";
     import ListItem from "./ListItem.svelte";
     import { createEventDispatcher } from 'svelte';
+    import { onMount } from "svelte";
+    import axios from "axios";
 
     export let chat_list;
-    
+    export let profile_img = './assets/user.svg';
+    export let user_name;
     // [
     //     {chat_title: "Mi Padre", chat_msg_prev: "Salut Robert, Comment tu vas?", chat_icon: "./assets/user.svg"},
     //     {chat_title: "Mi Padre", chat_msg_prev: "Salut Robert, Comment tu vas?", chat_icon: "./assets/user.svg"},
@@ -22,8 +25,7 @@
     // ];
 
     const dispatch = createEventDispatcher();
-
-    export let profile_img = './assets/user.svg';
+    const host = "http://127.0.0.1:8000/monchat";
 
     function handleChatClick(chat) {
         dispatch('chatclick', {
@@ -76,12 +78,48 @@
         // settings page
     }
 
+    async function upload() {
+        console.log("Preparing file upload...")
+        let fileInput = document.getElementById("file_input");
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        await axios.post(`${host}/profile_upload/${user_name}/`, 
+            formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }
+        ).then(
+            response => {
+                alert(response.data.msg);
+         }).catch(
+            err => {
+                alert(err);
+            }
+        )
+    }
+
+    let uploadedFile = [];
+    $: if (uploadedFile.length > 0) {
+        upload();
+    }
+
+    onMount(() => {
+        let fileBtn = document.getElementById("file_input");
+        let profileBtn = document.getElementById("profile_btn");
+        profileBtn.addEventListener('click', () => {
+            fileBtn.click();
+        });
+    })
+
 </script>
 
 <div class="list-container">
     <div class="side-topbar">
-        <img class="profile-img" src={`${profile_img}`} alt={"profile"} />
-
+        <img class="profile-img" id="profile_btn" src={`${profile_img}`} alt={"profile"} />
+        <input type="file" id="file_input" bind:files={uploadedFile} hidden/>
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <span class="dot-menu" on:click={show_menu}>
             <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet" class="chat-menu" version="1.1" x="0px" y="0px" enable-background="new 0 0 24 24" xml:space="preserve">

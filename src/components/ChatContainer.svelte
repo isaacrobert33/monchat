@@ -1,5 +1,6 @@
 <script>
     import { each } from "svelte/internal";
+    import { onMount } from "svelte";
     import ChatCard from "./ChatCard.svelte";
     export let chat_recipient_id = '';
     export let chat_profile_img = './assets/user.svg';
@@ -40,20 +41,19 @@
         console.error('Chat socket closed unexpectedly');
     };
     
-    window.onload = function(e) {
+    onMount((e) => {
         console.log("loaded");
         let msg_input = document.getElementById("msg_input");
         msg_input.addEventListener('keydown', function(e) {
-            console.log(e.key);
             if (e.key === "Enter") {
-                console.log("Sending message...", msg_input.value);
                 if (msg_input.value) {
+                    console.log("Sending message...", msg_input.value);
                     chat_socket.send(JSON.stringify(msg_input.value))
                 }
                 
             }
         })
-    }
+    });
     
 </script>
 

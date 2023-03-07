@@ -207,7 +207,7 @@
     }
 
     .filter {
-        color: rgba(240, 255, 255, 0.5);
+        color: #f0ffff80;
         margin-left: 10px;
         cursor: pointer;
     }

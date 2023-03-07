@@ -50,7 +50,7 @@
 	let openedChatData = {};
 	const openChat = async (event) => {
 		openedChatData = event.detail;
-		await axios.get(`${host}/chats/${event.detail.msg_sender.user_name}/${openedChatData.msg_recipient.user_name}/`, {
+		await axios.get(`${host}/chats/${user_data.user_name}/${ openedChatData.direction == "outbound" ? openedChatData.msg_recipient.user_name: openedChatData.msg_sender.user_name }/`, {
 			headers: {
 				'Content-Type': 'application/json'
 			}
@@ -61,16 +61,18 @@
 		)
 	}
 
-	
+	console.log("udata", user_data);
 </script>
 
 <div class="App">
 	{#if !user_id}
 		<Login on:login={handleLogin} />
 	{/if}
-	<ListContainer chat_list={chat_list} profile_img={`./profile_assets/${user_data.user_icon}`} on:chatclick={openChat}/>
+	{#if user_data.user_name}
+		<ListContainer chat_list={chat_list} profile_img={`./profile_assets/${user_data.user_icon}`} on:chatclick={openChat}/>
+	{/if}
 	{#if openedChatData.msg_recipient}
-		<ChatContainer user_id={user_id} chat_recipient_id={openedChatData.msg_recipient.user_name} chat_profile_name={openedChatData.msg_recipient.user_name} conversation_list={conversations}  />
+		<ChatContainer user_id={user_id} chat_recipient_id={ openedChatData.direction == "outbound" ? openedChatData.msg_recipient.user_name: openedChatData.msg_sender.user_name } chat_profile_name={ openedChatData.direction == "outbound" ? openedChatData.msg_recipient.user_name: openedChatData.msg_sender.user_name } conversation_list={conversations}  />
 	{/if}
 </div>
 

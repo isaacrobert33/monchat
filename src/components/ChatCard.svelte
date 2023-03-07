@@ -11,7 +11,7 @@
             <span class="tail-out">
                 <svg viewBox="0 0 8 13" height="13" width="8" preserveAspectRatio="xMidYMid meet" class="" version="1.1" x="0px" y="0px" enable-background="new 0 0 8 13" xml:space="preserve"><path opacity="0.13" d="M5.188,1H0v11.193l6.467-8.625 C7.526,2.156,6.958,1,5.188,1z"></path><path fill="currentColor" d="M5.188,0H0v11.193l6.467-8.625C7.526,1.156,6.958,0,5.188,0z"></path></svg>
             </span>
-            <span class="chat-msg">{msg_body}</span>
+            <span class="me-chat-msg">{msg_body}</span>
             <span class="chat-time me-time">{msg_time}</span>
             <span class="read-status">
                 {#if msg_status === 'UD'}
@@ -82,6 +82,7 @@
     .my {
         right: 40px;
         padding: 5px;
+        padding-right: 8px;
         max-width: 40%;
         min-width: 87px;
         min-height: 25px;
@@ -112,6 +113,11 @@
     .chat-msg {
         font-size: 14px;
         margin-right: 34px;
+    }
+
+    .me-chat-msg {
+        font-size: 14px;
+        margin-right: 56px;
     }
 
     .chat-time {

@@ -5,30 +5,56 @@
     export let chat_profile_img = './assets/user.svg';
     export let chat_profile_name = "Mi Padre";
     export let chat_profile_status = "Online";
-    export let conversation_list = [
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
-        {msg: "Hi", msg_time: "12:30", direction: "you"},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: false},
-        {msg: "Hello", msg_time: "12:00", direction: "me", read_status: null},
-    ];
-    let socket_url = `ws://${location.host}/ws/chat/${chat_recipient_id}`;
-    let chat_socket = new WebSocket(socket_url);
-    chat_socket.onmessage = function(event) {
+    export let conversation_list = [];
+    // [
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: true},
+    //     {msg: "Hi", msg_time: "12:30", direction: "you"},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: false},
+    //     {msg: "Hello", msg_time: "12:00", direction: "me", read_status: null},
+    // ];
 
+    var host = "127.0.0.1:8000";
+    let socket_url = `ws://${host}/ws/chat/${chat_recipient_id}/`;
+    let chat_socket = new WebSocket(socket_url);
+
+    chat_socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        conversation_list.push(data.message);
+        let chatlist_node = document.getElementById("conv_list");
+        chatlist_node.scrollTop = chatlist_node.scrollHeight;
     }
+    chat_socket.onclose = function(event) {
+        console.error('Chat socket closed unexpectedly');
+    };
+    
+    window.onload = function(e) {
+        console.log("loaded");
+        let msg_input = document.getElementById("msg_input");
+        msg_input.addEventListener('keydown', function(e) {
+            console.log(e.key);
+            if (e.key === "Enter") {
+                console.log("Sending message...", msg_input.value);
+                if (msg_input.value) {
+                    chat_socket.send(JSON.stringify(msg_input.value))
+                }
+                
+            }
+        })
+    }
+    
 </script>
 
 <div class="chats-container">
@@ -55,7 +81,7 @@
     </div>
 
     <!-- Chats Start -->
-    <div class="conversation-list">
+    <div class="conversation-list" id="conv_list">
         {#each conversation_list as conv}
             <ChatCard {...conv} />
         {/each}
@@ -70,7 +96,7 @@
                 </path>
             </svg>
         </span>
-        <input type="text" class="msg-input" id="msg" placeholder="Enter a message" />
+        <input type="text" class="msg-input" id="msg_input" placeholder="Enter a message" />
         <span>
             <svg viewBox="0 0 24 24" height="24" width="24" preserveAspectRatio="xMidYMid meet" class="msg-mic" version="1.1" x="0px" y="0px" enable-background="new 0 0 24 24" xml:space="preserve">
                 <path fill="currentColor" d="M11.999,14.942c2.001,0,3.531-1.53,3.531-3.531V4.35c0-2.001-1.53-3.531-3.531-3.531 S8.469,2.35,8.469,4.35v7.061C8.469,13.412,9.999,14.942,11.999,14.942z M18.237,11.412c0,3.531-2.942,6.002-6.237,6.002 s-6.237-2.471-6.237-6.002H3.761c0,4.001,3.178,7.297,7.061,7.885v3.884h2.354v-3.884c3.884-0.588,7.061-3.884,7.061-7.885 L18.237,11.412z">
@@ -93,6 +119,7 @@
 
     .conversation-list {
         overflow: auto;
+        overflow-x: hidden;
         padding: 60px 0;
     }
 

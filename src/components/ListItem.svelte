@@ -1,14 +1,15 @@
 <script>
-    export let chat_title;
-    export let chat_msg_prev;
-    export let chat_icon;
+    export let msg_recipient;
+    export let msg_body;
+    export let clickCallback;
 </script>
 
-<div class="list-item">
-    <img src={chat_icon} alt={chat_title} />
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<div class="list-item" on:click={clickCallback}>
+    <img src={`profile_assets/${msg_recipient.user_icon}`} alt={msg_recipient.user_name} />
     <div class="chat-info">
-        <p class="title">{chat_title}</p>
-        <p class="msg">{chat_msg_prev}</p>
+        <p class="title">{msg_recipient.user_name}</p>
+        <p class="msg">{msg_body}</p>
     </div>
 </div>
 

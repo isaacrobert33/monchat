@@ -5,13 +5,26 @@
     export let msg_time;
     export let direction;
     export let clickCallback;
+
+    var host = "http://127.0.0.1:8000";
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="list-item" on:click={clickCallback}>
-    <img src={`profile_assets/${msg_recipient.user_icon}`} alt={msg_recipient.user_name} />
+    <img
+        src={`${host}/media/${
+            direction == "outbound"
+                ? msg_recipient.user_icon
+                : msg_sender.user_icon
+        }/`}
+        alt={msg_recipient.user_name}
+    />
     <div class="chat-info">
-        <p class="title">{ direction == "outbound" ? msg_recipient.user_name : msg_sender.user_name }</p>
+        <p class="title">
+            {direction == "outbound"
+                ? `${msg_recipient.first_name} ${msg_recipient.last_name}`
+                : `${msg_sender.first_name} ${msg_sender.last_name}`}
+        </p>
         <p class="msg">{msg_body}</p>
     </div>
     <span class="msg_time">{msg_time}</span>
@@ -51,6 +64,7 @@
     img {
         width: 50px;
         height: 50px;
+        border-radius: 50%;
         display: inline-block;
     }
 

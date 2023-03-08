@@ -2,7 +2,11 @@
     import { each } from "svelte/internal";
     import { onMount } from "svelte";
     import ChatCard from "./ChatCard.svelte";
+    import { createEventDispatcher } from "svelte";
+
     var host = "http://127.0.0.1:8000";
+    const dispatch = createEventDispatcher();
+
     export let user_data;
     export let chat_recipient_data;
     export let chat_recipient_id = chat_recipient_data.user_name;
@@ -11,54 +15,12 @@
     export let chat_profile_status;
     export let conversation_list = [];
     export let socketID;
-    export let latest_msg_data;
 
     console.log(user_data.online_status);
 
     ////// Initializing Chat Socket
     let socket_url = `ws://127.0.0.1:8000/ws/chat/${socketID}/`;
     let chat_socket = new WebSocket(socket_url);
-
-    const init_read_socket = async (msg_id) => {
-        var msg_socket = new WebSocket(
-            `ws://127.0.0.1:8000/ws/read_reciept/${msg_id}/`
-        );
-        msg_socket.onopen = (e) => {
-            console.log("SOCKET OPENED FOR READ RECEIPT");
-        };
-
-        msg_socket.onclose = (e) => {
-            console.log("SOCKET CLOSED UNEXPECTEDLY");
-        };
-
-        msg_socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log("Message status changed", data);
-            conversation_list.forEach((chat) => {
-                if (chat.msg_id === data.msg_id) {
-                    console.log("stat", data.msg_status);
-                    chat.msg_status = data.msg_status;
-                }
-            });
-        };
-    };
-
-    const sendReadReceipt = (msg_socket, msg_id) => {
-        let dt = new Date();
-        console.log("sent read receipt");
-        msg_socket.send(
-            JSON.stringify({
-                msg_id: msg_id,
-                msg_status: "RD",
-                read_time: dt.toISOString(),
-            })
-        );
-        document
-            .getElementById("conv_list")
-            .removeEventListener("focus", (e) => {
-                sendReadReceipt(msg_id);
-            });
-    };
 
     chat_socket.onmessage = function (event) {
         const data = JSON.parse(event.data);
@@ -78,20 +40,62 @@
 
         conversation_list = [...conversation_list, data];
 
-        let chatlist_node = document.getElementById("conv_list");
-        chatlist_node.scrollTop = chatlist_node.scrollHeight;
+        dispatch("newmessage", data);
 
-        init_read_socket(data.msg_id);
+        var msg_socket = new WebSocket(
+            `ws://127.0.0.1:8000/ws/read_reciept/${data.msg_id}/`
+        );
+        msg_socket.onopen = (e) => {
+            console.log("SOCKET OPENED FOR READ RECEIPT");
+        };
+
+        msg_socket.onclose = (e) => {
+            console.log("READ RECEIPT SOCKET CLOSED UNEXPECTEDLY");
+        };
+
+        msg_socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log("Message status changed", data);
+            conversation_list.forEach((chat) => {
+                if (chat.msg_id === data.msg_id) {
+                    conversation_list[
+                        conversation_list.indexOf(chat)
+                    ].msg_status = data.msg_status;
+                    msg_socket.close();
+                }
+            });
+        };
+
+        const sendReadReceipt = () => {
+            let dt = new Date();
+            console.log("sent read receipt");
+
+            dispatch("messageread", data);
+
+            msg_socket.send(
+                JSON.stringify({
+                    msg_id: data.msg_id,
+                    msg_status: "RD",
+                    read_time: dt.toISOString(),
+                })
+            );
+            document
+                .getElementById("conv_list")
+                .removeEventListener("mousemove", sendReadReceipt);
+        };
+
+        console.log(msg_socket);
 
         if (data.msg_recipient == user_data.user_name) {
             document
                 .getElementById("conv_list")
-                .addEventListener("hover", () => {
-                    console.log("Hovered");
-                    sendReadReceipt(msg_socket, data.msg_id);
-                });
-            console.log("Added lst");
+                .addEventListener("mousemove", sendReadReceipt);
         }
+
+        let chatlist_node = document.getElementById("chat_con");
+        chatlist_node.scrollTop =
+            document.getElementById("conv_list").scrollHeight;
+        console.log(document.getElementById("conv_list").scrollHeight);
     };
 
     chat_socket.onclose = function (event) {
@@ -104,6 +108,10 @@
     }
 
     onMount(() => {
+        let chatlist_node = document.getElementById("chat_con");
+        chatlist_node.scrollTop =
+            document.getElementById("conv_list").scrollHeight;
+
         let msg_input = document.getElementById("msg_input");
         msg_input.addEventListener("keydown", function (e) {
             if (e.key === "Enter") {
@@ -120,34 +128,46 @@
                 }
             }
         });
-        if (latest_msg_data) {
+
+        var last_msg = conversation_list[conversation_list.length - 1];
+        console.log("lms", last_msg);
+
+        if (last_msg.msg_status == "UD" || last_msg.msg_status == "DV") {
             var msg_socket = new WebSocket(
-                `ws://127.0.0.1:8000/ws/read_reciept/${latest_msg_data.msg_id}/`
+                `ws://127.0.0.1:8000/ws/read_reciept/${last_msg.msg_id}/`
             );
 
             msg_socket.onopen = (e) => {
                 console.log("SOCKET OPENED FOR READ RECEIPT");
-                console.log("lms", latest_msg_data);
-                if (latest_msg_data.msg_sender == user_data.user_name) {
+
+                if (last_msg.direction == "outbound") {
                     console.log("Listening for read receipts...");
                     msg_socket.onmessage = (event) => {
                         const data = JSON.parse(event.data);
                         console.log("Message status changed", data);
                         conversation_list.forEach((chat) => {
                             if (chat.msg_id === data.msg_id) {
-                                console.log("stat", data.msg_status);
-                                chat.msg_status = data.msg_status;
+                                conversation_list[
+                                    conversation_list.indexOf(chat)
+                                ].msg_status = data.msg_status;
                             }
                         });
                     };
                 } else {
-                    if (latest_msg_data.msg_status !== "RD") {
-                        conversation_list.forEach((chat) => {
-                            if (chat.msg_id === latest_msg_data.msg_id) {
-                                chat.msg_status = "RD";
-                            }
-                        });
-                        sendReadReceipt(msg_socket, latest_msg_data.msg_id);
+                    if (
+                        last_msg.msg_status !== "RD" &&
+                        last_msg.direction == "inbound"
+                    ) {
+                        let dt = new Date();
+                        console.log("sent read receipt");
+                        dispatch("messageread", last_msg);
+                        msg_socket.send(
+                            JSON.stringify({
+                                msg_id: last_msg.msg_id,
+                                msg_status: "RD",
+                                read_time: dt.toISOString(),
+                            })
+                        );
                         msg_socket.close();
                     }
                 }
@@ -156,7 +176,7 @@
     });
 </script>
 
-<div class="chats-container">
+<div class="chats-container" id="chat_con">
     <div class="right-topbar">
         <img class="chat-profile-img" src={chat_profile_img} alt={"profile"} />
         <div class="chat-profile-info">

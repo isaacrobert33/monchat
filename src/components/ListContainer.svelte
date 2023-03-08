@@ -9,6 +9,8 @@
     export let profile_img;
     export let user_name;
 
+    var users = [];
+
     const dispatch = createEventDispatcher();
     const host = "http://127.0.0.1:8000";
 
@@ -88,6 +90,38 @@
         upload();
     }
 
+    function check_nodes(e) {
+        let user_list_nodes = document
+            .getElementById("user_list")
+            .lastChild()
+            .childNodes();
+        let found_node = false;
+        user_list_nodes.forEach((node) => {
+            if (node == e.target) {
+                found_node = true;
+            }
+        });
+
+        if (!found_node) {
+            document.getElementById("user_list").style.display = "none";
+        }
+    }
+
+    async function display_users() {
+        await axios
+            .get(`${host}/users`, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+            .then((response) => {
+                users = response.data.data;
+
+                document.getElementById("user_list").style.display = "block";
+                document.addEventListener("click", check_nodes);
+            });
+    }
+
     onMount(() => {
         let fileBtn = document.getElementById("file_input");
         let profileBtn = document.getElementById("profile_btn");
@@ -164,6 +198,15 @@
     {:else}
         <span class="empty"><i>No recent chats, kindly start a chat.</i></span>
     {/if}
+
+    <span class="new-contact">+</span>
+    <div id="user_list" class="users">
+        <ul>
+            {#each users as user, index}
+                <li>{`${user.first_name} ${user.last_name}`}</li>
+            {/each}
+        </ul>
+    </div>
 </div>
 
 <style>
@@ -181,6 +224,22 @@
         z-index: 10;
         display: none;
         transition: opacity 1s ease;
+    }
+
+    .new-contact {
+        background-color: #00a884;
+        color: azure;
+        font-size: 40px;
+        font-weight: bold;
+        text-align: center;
+        width: 50px;
+        height: 50px;
+        position: fixed;
+        bottom: 20px;
+        left: 24%;
+        cursor: pointer;
+        box-shadow: 5px 3px 4px 2px rgba(0, 0, 0, 0.482);
+        border-radius: 50%;
     }
 
     .menu-dropdown ul {

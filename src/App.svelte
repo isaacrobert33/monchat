@@ -125,15 +125,12 @@
 	let conversations = [];
 	let openedChatData = {};
 	let socketID = null;
-	let latest_msg_data = null;
 
 	const openChat = async (event) => {
 		let recipient =
 			event.detail.direction == "outbound"
 				? event.detail.msg_recipient
 				: event.detail.msg_sender;
-
-		latest_msg_data = event.detail;
 
 		await axios
 			.get(`${host}/user/${recipient.user_id}/`, {
@@ -175,6 +172,52 @@
 				socketID = response.data.socket_id;
 			});
 	};
+
+	const handleNewMsg = (event) => {
+		console.log("new msg", event.detail);
+		chat_list.forEach((chat) => {
+			if (
+				chat.msg_recipient.user_name == event.detail.msg_sender ||
+				chat.msg_recipient.user_name === event.detail.msg_recipient
+			) {
+				let index = chat_list.indexOf(chat);
+				let c = chat_list[index];
+				let temp_chat_list = chat_list;
+
+				let updated = {
+					...c,
+					unread_count:
+						event.detail.direction == "inbound"
+							? c.unread_count + 1
+							: c.unread_count,
+					msg_time: event.detail.msg_time,
+					msg_body: event.detail.msg_body,
+				};
+				console.log("up", updated);
+				temp_chat_list.splice(index, 1);
+				temp_chat_list.push(updated);
+				chat_list = temp_chat_list;
+			}
+		});
+	};
+
+	const handleMsgRead = (event) => {
+		console.log("Read");
+		chat_list.forEach((chat) => {
+			if (
+				chat.msg_recipient.user_name == event.detail.msg_sender ||
+				chat.msg_recipient.user_name === event.detail.msg_recipient
+			) {
+				let index = chat_list.indexOf(chat);
+				let c = chat_list[index];
+				let updated = {
+					...c,
+					unread_count: 0,
+				};
+				chat_list[index] = updated;
+			}
+		});
+	};
 </script>
 
 <div class="App">
@@ -191,12 +234,13 @@
 	{/if}
 	{#if openedChatData.user_id && socketID}
 		<ChatContainer
-			{latest_msg_data}
 			chat_recipient_data={openedChatData}
 			{user_data}
 			bind:conversation_list={conversations}
 			{socketID}
 			chat_profile_status={currentChatStatus}
+			on:newmessage={handleNewMsg}
+			on:messageread={handleMsgRead}
 		/>
 	{/if}
 </div>

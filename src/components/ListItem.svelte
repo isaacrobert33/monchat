@@ -1,16 +1,18 @@
 <script>
+    export let msg_id;
     export let msg_recipient;
     export let msg_sender;
     export let msg_body;
     export let msg_time;
     export let direction;
+    export let unread_count;
     export let clickCallback;
 
     var host = "http://127.0.0.1:8000";
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="list-item" on:click={clickCallback}>
+<div id={msg_id} class="list-item" on:click={clickCallback}>
     <img
         src={`${host}/media/${
             direction == "outbound"
@@ -27,7 +29,17 @@
         </p>
         <p class="msg">{msg_body}</p>
     </div>
-    <span class="msg_time">{msg_time}</span>
+
+    {#if unread_count}
+        <span class="unread-count">{unread_count}</span>
+    {/if}
+    <span
+        class="msg_time"
+        style="color: {unread_count
+            ? '#00a884'
+            : '#f0ffff80'}; font-weight: {unread_count ? 'bold' : 'light'};"
+        >{msg_time}</span
+    >
 </div>
 
 <style>
@@ -66,6 +78,21 @@
         height: 50px;
         border-radius: 50%;
         display: inline-block;
+    }
+
+    .unread-count {
+        border-radius: 50%;
+        color: #111b21;
+        background-color: #00a884;
+        padding: 5px;
+        width: 10px;
+        height: 10px;
+        text-align: center;
+        margin-top: 23px;
+        font-size: 12px;
+        font-weight: bold;
+        right: 12px;
+        position: absolute;
     }
 
     .msg_time {

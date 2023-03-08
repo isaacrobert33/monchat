@@ -1,4 +1,5 @@
 <script>
+    export let msg_id;
     export let msg_body;
     export let msg_time;
     export let direction;
@@ -6,7 +7,7 @@
 </script>
 
 {#if direction === "outbound"}
-    <div class="me-msg-card">
+    <div id={msg_id} class="me-msg-card">
         <div class="my">
             <span class="tail-out">
                 <svg
@@ -79,7 +80,7 @@
         </div>
     </div>
 {:else}
-    <div class="you-msg-card ">
+    <div id={msg_id} class="you-msg-card ">
         <div class="you">
             <span class="tail-in">
                 <svg

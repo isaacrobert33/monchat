@@ -9,6 +9,62 @@
 	let user_id = window.localStorage.getItem("monchat_user_id");
 	let user_data = {};
 	let chat_list = [];
+	let currentChatStatus = false;
+
+	const initialize_socket = () => {
+		///// Initializing online status socket
+		let online_socket_url = `ws://127.0.0.1:8000/ws/online/`;
+		let online_socket = new WebSocket(online_socket_url);
+
+		online_socket.onopen = function (e) {
+			console.log("CONNECTED TO ONLINE CONSUMER");
+			online_socket.send(
+				JSON.stringify({
+					user_name: user_data.user_name,
+					type: "open",
+				})
+			);
+		};
+
+		window.addEventListener("beforeunload", function (e) {
+			alert("Unload");
+			let dt = new Date();
+
+			online_socket.send(
+				JSON.stringify({
+					user_name: user_data.user_name,
+					type: "offline",
+					time: dt.toISOString(),
+				})
+			);
+		});
+
+		online_socket.onclose = function (e) {
+			console.log("DISCONNECTED FROM ONLINE CONSUMER");
+		};
+
+		online_socket.onmessage = function (e) {
+			let data = JSON.parse(e.data);
+
+			if (openedChatData.user_name) {
+				if (data.user_name == openedChatData.user_name) {
+					if (data.online_status == true) {
+						currentChatStatus = "online";
+					} else {
+						let dt = new Date(data.time);
+						let dt_str = `Last seen ${dt
+							.getHours()
+							.toString()
+							.padStart(2, "0")}:${dt
+							.getMinutes()
+							.toString()
+							.padStart(2, "0")}`;
+						currentChatStatus = dt_str;
+					}
+				}
+			}
+		};
+	};
 
 	const fetchCL = async () => {
 		await axios
@@ -19,6 +75,7 @@
 			})
 			.then((response) => {
 				user_data = response.data.data;
+				initialize_socket();
 			})
 			.catch((err) => {
 				window.localStorage.setItem("monchat_user_id", "");
@@ -48,18 +105,65 @@
 		fetchCL();
 	};
 
+	const sendReadReceipt = (msg_socket, msg_id) => {
+		let dt = new Date();
+		console.log("sent read receipt");
+		msg_socket.send(
+			JSON.stringify({
+				msg_id: msg_id,
+				msg_status: ("RD", "Read"),
+				read_time: dt.toISOString(),
+			})
+		);
+		document
+			.getElementById("conv_list")
+			.removeEventListener("focus", (e) => {
+				sendReadReceipt(msg_id);
+			});
+	};
+
 	let conversations = [];
 	let openedChatData = {};
 	let socketID = null;
+	let latest_msg_data = null;
+
 	const openChat = async (event) => {
-		openedChatData = event.detail;
+		let recipient =
+			event.detail.direction == "outbound"
+				? event.detail.msg_recipient
+				: event.detail.msg_sender;
+
+		latest_msg_data = event.detail;
+
+		await axios
+			.get(`${host}/user/${recipient.user_id}/`, {
+				headers: {
+					"Content-Type": "application/json",
+				},
+			})
+			.then((response) => {
+				openedChatData = response.data.data;
+				let dt = new Date(openedChatData.last_seen);
+				let last_seen = `Last seen ${dt
+					.getHours()
+					.toString()
+					.padStart(2, "0")}:${dt
+					.getMinutes()
+					.toString()
+					.padStart(2, "0")}`;
+				currentChatStatus =
+					openedChatData.online_status == false
+						? last_seen
+						: "online";
+			})
+			.catch((err) => {
+				alert("Error fetching recipient data");
+				console.log(err);
+			});
+
 		await axios
 			.get(
-				`${host}/chats/${user_data.user_name}/${
-					openedChatData.direction == "outbound"
-						? openedChatData.msg_recipient.user_name
-						: openedChatData.msg_sender.user_name
-				}/`,
+				`${host}/chats/${user_data.user_name}/${openedChatData.user_name}/`,
 				{
 					headers: {
 						"Content-Type": "application/json",
@@ -79,18 +183,20 @@
 	{/if}
 	{#if user_data.user_name}
 		<ListContainer
-			{chat_list}
+			bind:chat_list
 			profile_img={user_data.user_icon}
 			user_name={user_data.user_name}
 			on:chatclick={openChat}
 		/>
 	{/if}
-	{#if openedChatData.msg_recipient && socketID}
+	{#if openedChatData.user_id && socketID}
 		<ChatContainer
-			{openedChatData}
+			{latest_msg_data}
+			chat_recipient_data={openedChatData}
 			{user_data}
-			conversation_list={conversations}
+			bind:conversation_list={conversations}
 			{socketID}
+			chat_profile_status={currentChatStatus}
 		/>
 	{/if}
 </div>

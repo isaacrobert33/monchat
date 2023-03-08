@@ -4,30 +4,61 @@
     import ChatCard from "./ChatCard.svelte";
     var host = "http://127.0.0.1:8000";
     export let user_data;
-    export let openedChatData;
-    export let chat_recipient_id =
-        openedChatData.direction == "outbound"
-            ? openedChatData.msg_recipient.user_name
-            : openedChatData.msg_sender.user_name;
-
-    export let chat_profile_name =
-        openedChatData.direction == "outbound"
-            ? `${openedChatData.msg_recipient.first_name} ${openedChatData.msg_recipient.last_name}`
-            : `${openedChatData.msg_sender.first_name} ${openedChatData.msg_sender.last_name}`;
-
-    export let chat_profile_img = `${host}/media/${
-        openedChatData.direction == "outbound"
-            ? openedChatData.msg_recipient.user_icon
-            : openedChatData.msg_sender.user_icon
-    }/`;
-    export let chat_profile_status =
-        user_data.online_status == false ? "offline" : "online";
+    export let chat_recipient_data;
+    export let chat_recipient_id = chat_recipient_data.user_name;
+    export let chat_profile_name = `${chat_recipient_data.first_name} ${chat_recipient_data.last_name}`;
+    export let chat_profile_img = `${host}/media/${chat_recipient_data.user_icon}/`;
+    export let chat_profile_status;
     export let conversation_list = [];
     export let socketID;
+    export let latest_msg_data;
+
+    console.log(user_data.online_status);
 
     ////// Initializing Chat Socket
     let socket_url = `ws://127.0.0.1:8000/ws/chat/${socketID}/`;
     let chat_socket = new WebSocket(socket_url);
+
+    const init_read_socket = async (msg_id) => {
+        var msg_socket = new WebSocket(
+            `ws://127.0.0.1:8000/ws/read_reciept/${msg_id}/`
+        );
+        msg_socket.onopen = (e) => {
+            console.log("SOCKET OPENED FOR READ RECEIPT");
+        };
+
+        msg_socket.onclose = (e) => {
+            console.log("SOCKET CLOSED UNEXPECTEDLY");
+        };
+
+        msg_socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log("Message status changed", data);
+            conversation_list.forEach((chat) => {
+                if (chat.msg_id === data.msg_id) {
+                    console.log("stat", data.msg_status);
+                    chat.msg_status = data.msg_status;
+                }
+            });
+        };
+    };
+
+    const sendReadReceipt = (msg_socket, msg_id) => {
+        let dt = new Date();
+        console.log("sent read receipt");
+        msg_socket.send(
+            JSON.stringify({
+                msg_id: msg_id,
+                msg_status: "RD",
+                read_time: dt.toISOString(),
+            })
+        );
+        document
+            .getElementById("conv_list")
+            .removeEventListener("focus", (e) => {
+                sendReadReceipt(msg_id);
+            });
+    };
 
     chat_socket.onmessage = function (event) {
         const data = JSON.parse(event.data);
@@ -40,56 +71,31 @@
         data.direction =
             data.msg_sender == user_data.user_name ? "outbound" : "inbound";
 
+        if (chat_profile_status == "online") {
+            data.msg_status = "DV";
+        }
         console.log("New message", data);
 
         conversation_list = [...conversation_list, data];
 
         let chatlist_node = document.getElementById("conv_list");
         chatlist_node.scrollTop = chatlist_node.scrollHeight;
+
+        init_read_socket(data.msg_id);
+
+        if (data.msg_recipient == user_data.user_name) {
+            document
+                .getElementById("conv_list")
+                .addEventListener("hover", () => {
+                    console.log("Hovered");
+                    sendReadReceipt(msg_socket, data.msg_id);
+                });
+            console.log("Added lst");
+        }
     };
 
     chat_socket.onclose = function (event) {
         console.error("Chat socket closed unexpectedly");
-    };
-
-    ///// Initializing online status socket
-    let online_socket_url = `ws://127.0.0.1:8000/ws/online/`;
-    let online_socket = new WebSocket(online_socket_url);
-
-    online_socket.onopen = function (e) {
-        console.log("CONNECTED TO ONLINE CONSUMER");
-        online_socket.send(
-            JSON.stringify({
-                user_name: user_data.user_name,
-                type: "open",
-            })
-        );
-    };
-
-    window.addEventListener("beforeunload", function (e) {
-        console.log("Unload");
-        online_socket.send(
-            JSON.stringify({
-                user_name: user_data.user_name,
-                type: "offline",
-            })
-        );
-    });
-
-    online_socket.onclose = function (e) {
-        console.log("DISCONNECTED FROM ONLINE CONSUMER");
-    };
-
-    online_socket.onmessage = function (e) {
-        let data = JSON.parse(e.data);
-        console.log(data);
-        if (data.user_name == chat_recipient_id) {
-            if (data.online_status == true) {
-                chat_profile_status = "online";
-            } else {
-                chat_profile_status = "offline";
-            }
-        }
     };
 
     function deleteText(index) {
@@ -109,13 +115,44 @@
                         msg_sender: user_data.user_name,
                         msg_recipient: chat_recipient_id,
                     };
-                    console.log("Sending message now...", msg_data);
                     chat_socket.send(JSON.stringify(msg_data));
-
                     msg_input.value = "";
                 }
             }
         });
+        if (latest_msg_data) {
+            var msg_socket = new WebSocket(
+                `ws://127.0.0.1:8000/ws/read_reciept/${latest_msg_data.msg_id}/`
+            );
+
+            msg_socket.onopen = (e) => {
+                console.log("SOCKET OPENED FOR READ RECEIPT");
+                console.log("lms", latest_msg_data);
+                if (latest_msg_data.msg_sender == user_data.user_name) {
+                    console.log("Listening for read receipts...");
+                    msg_socket.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        console.log("Message status changed", data);
+                        conversation_list.forEach((chat) => {
+                            if (chat.msg_id === data.msg_id) {
+                                console.log("stat", data.msg_status);
+                                chat.msg_status = data.msg_status;
+                            }
+                        });
+                    };
+                } else {
+                    if (latest_msg_data.msg_status !== "RD") {
+                        conversation_list.forEach((chat) => {
+                            if (chat.msg_id === latest_msg_data.msg_id) {
+                                chat.msg_status = "RD";
+                            }
+                        });
+                        sendReadReceipt(msg_socket, latest_msg_data.msg_id);
+                        msg_socket.close();
+                    }
+                }
+            };
+        }
     });
 </script>
 
@@ -172,7 +209,7 @@
 
     <div class="conversation-list" id="conv_list">
         {#each conversation_list as conv, index}
-            <ChatCard {...conv} />
+            <ChatCard {...conv} bind:msg_status={conv.msg_status} />
         {/each}
     </div>
 

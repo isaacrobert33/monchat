@@ -41,6 +41,8 @@
             });
     }
 
+    let invalid_pwd = false;
+
     async function signUp() {
         let payload = {
             fname: document.getElementById("fname").value,
@@ -48,6 +50,10 @@
             uname: document.getElementById("sign_up_uname").value,
             pwd: document.getElementById("sign_up_pwd").value,
         };
+        if (!payload.pwd) {
+            invalid_pwd = true;
+            return;
+        }
         await axios
             .post(`${host}/sign_up/`, payload, {
                 headers: {
@@ -171,6 +177,10 @@
             {:else if uname_invalid}
                 <span style="color: tomato; font-size: 13px;"
                     ><i>Username taken, try another.</i></span
+                >
+            {:else if invalid_pwd}
+                <span style="color: tomato; font-size: 13px;"
+                    ><i>Invalid password</i></span
                 >
             {/if}
             <button id="sign_up-btn" on:click={signUp} disabled={invalid_data}

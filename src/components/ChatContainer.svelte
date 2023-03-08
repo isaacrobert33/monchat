@@ -132,7 +132,10 @@
         var last_msg = conversation_list[conversation_list.length - 1];
         console.log("lms", last_msg);
 
-        if (last_msg.msg_status == "UD" || last_msg.msg_status == "DV") {
+        if (
+            (last_msg && last_msg.msg_status == "UD") ||
+            (last_msg && last_msg.msg_status == "DV")
+        ) {
             var msg_socket = new WebSocket(
                 `ws://127.0.0.1:8000/ws/read_reciept/${last_msg.msg_id}/`
             );

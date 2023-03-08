@@ -195,7 +195,7 @@
 				};
 				console.log("up", updated);
 				temp_chat_list.splice(index, 1);
-				temp_chat_list.push(updated);
+				temp_chat_list.unshift(updated);
 				chat_list = temp_chat_list;
 			}
 		});
@@ -218,6 +218,24 @@
 			}
 		});
 	};
+
+	const handleNewChat = async (event) => {
+		openedChatData = event.detail;
+
+		await axios
+			.get(
+				`${host}/chats/${user_data.user_name}/${openedChatData.user_name}/`,
+				{
+					headers: {
+						"Content-Type": "application/json",
+					},
+				}
+			)
+			.then((response) => {
+				conversations = response.data.data;
+				socketID = response.data.socket_id;
+			});
+	};
 </script>
 
 <div class="App">
@@ -230,6 +248,7 @@
 			profile_img={user_data.user_icon}
 			user_name={user_data.user_name}
 			on:chatclick={openChat}
+			on:newchat={handleNewChat}
 		/>
 	{/if}
 	{#if openedChatData.user_id && socketID}

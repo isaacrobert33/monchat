@@ -91,10 +91,8 @@
     }
 
     function check_nodes(e) {
-        let user_list_nodes = document
-            .getElementById("user_list")
-            .lastChild()
-            .childNodes();
+        let user_list_nodes =
+            document.getElementById("user_list").lastChild.childNodes;
         let found_node = false;
         user_list_nodes.forEach((node) => {
             if (node == e.target) {
@@ -109,7 +107,7 @@
 
     async function display_users() {
         await axios
-            .get(`${host}/users`, {
+            .get(`${host}/monchat/users/`, {
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -199,11 +197,24 @@
         <span class="empty"><i>No recent chats, kindly start a chat.</i></span>
     {/if}
 
-    <span class="new-contact">+</span>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <span class="new-contact" on:click={display_users}>+</span>
     <div id="user_list" class="users">
+        <input id="user_search" type="text" placeholder="Search for a user" />
         <ul>
             {#each users as user, index}
-                <li>{`${user.first_name} ${user.last_name}`}</li>
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <li
+                    on:click={(e) => {
+                        dispatch("newchat", user);
+                    }}
+                >
+                    <img
+                        src={`${host}/media/${user.user_icon}/`}
+                        alt={user.user_id}
+                    />
+                    <span>{`${user.first_name} ${user.last_name}`}</span>
+                </li>
             {/each}
         </ul>
     </div>
@@ -224,6 +235,65 @@
         z-index: 10;
         display: none;
         transition: opacity 1s ease;
+    }
+
+    .users {
+        width: 300px;
+        padding: 10px 0;
+        color: azure;
+        position: fixed;
+        left: 28%;
+        bottom: 45px;
+        background-color: rgba(240, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        box-shadow: 2px 3px 5px 2px rgba(0, 0, 0, 0.482);
+        border-radius: 8px;
+        display: none;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+
+    .users ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    .users li {
+        margin: 0;
+        padding: 5px;
+        cursor: pointer;
+        display: flex;
+        flex-wrap: wrap;
+        list-style-type: none;
+    }
+
+    .users li img {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin: 5px;
+    }
+
+    .users li span {
+        text-align: center;
+        padding: 2px;
+        margin: 0;
+        margin-top: 10px;
+        left: 60px;
+        position: absolute;
+    }
+
+    .users li:hover {
+        background-color: #111b21;
+    }
+
+    #user_search {
+        margin-left: 26px;
+        background-color: #202c338c;
+        border: none;
+        outline: none;
+        color: azure;
+        border-radius: 14px;
     }
 
     .new-contact {

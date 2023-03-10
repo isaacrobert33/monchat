@@ -9,17 +9,13 @@
 
     export let user_data;
     export let chat_recipient_data;
-    export let chat_recipient_id = chat_recipient_data.user_name;
-    export let chat_profile_name = `${chat_recipient_data.first_name} ${chat_recipient_data.last_name}`;
-    export let chat_profile_img = `${host}/media/${chat_recipient_data.user_icon}/`;
     export let chat_profile_status;
     export let conversation_list = [];
-    export let socketID;
 
     console.log(user_data.online_status);
 
     ////// Initializing Chat Socket
-    let socket_url = `ws://127.0.0.1:8000/ws/chat/${socketID}/`;
+    let socket_url = `ws://127.0.0.1:8000/ws/chat/${user_data.user_id}/`;
     let chat_socket = new WebSocket(socket_url);
 
     chat_socket.onmessage = function (event) {
@@ -118,10 +114,13 @@
                 if (msg_input.value) {
                     const date = new Date();
                     let msg_data = {
+                        first_name: chat_recipient_data.first_name,
+                        last_name: chat_recipient_data.last_name,
+                        user_icon: chat_recipient_data.user_icon,
                         msg_body: msg_input.value,
                         msg_time: date.toISOString(),
                         msg_sender: user_data.user_name,
-                        msg_recipient: chat_recipient_id,
+                        msg_recipient: chat_recipient_data.user_name,
                     };
                     chat_socket.send(JSON.stringify(msg_data));
                     msg_input.value = "";
@@ -181,9 +180,15 @@
 
 <div class="chats-container" id="chat_con">
     <div class="right-topbar">
-        <img class="chat-profile-img" src={chat_profile_img} alt={"profile"} />
+        <img
+            class="chat-profile-img"
+            src={`${host}/media/${chat_recipient_data.user_icon}/`}
+            alt={"profile"}
+        />
         <div class="chat-profile-info">
-            <p class="chat-profile-name">{chat_profile_name}</p>
+            <p class="chat-profile-name">
+                {`${chat_recipient_data.first_name} ${chat_recipient_data.last_name}`}
+            </p>
             <p class="chat-profile-status">{chat_profile_status}</p>
         </div>
         <div class="chat-widget">
@@ -339,17 +344,18 @@
 
     .chat-profile-info {
         color: azure;
-        width: 10%;
+        width: 15%;
         margin: 5px 10px;
         position: absolute;
         display: inline-block;
     }
 
-    .chat-profile-info p {
+    .chat-profile-name {
         margin: 2px;
     }
 
     .chat-profile-status {
+        margin: 2px;
         color: rgba(240, 255, 255, 0.5);
         font-size: 13px;
     }

@@ -4,6 +4,7 @@
 
     let sign_in = true;
     let sign_up = false;
+    let pwd_reset = false;
     const host = "http://127.0.0.1:8000/monchat";
 
     const dispatch = createEventDispatcher();
@@ -11,9 +12,16 @@
     $: if (sign_up === true) {
         sign_in = false;
     }
+    $: if (pwd_reset == true) {
+        sign_in = false;
+    }
 
     function show_signup() {
         sign_up = true;
+    }
+
+    function show_password() {
+        pwd_reset = true;
     }
 
     let signin_err = false;
@@ -62,6 +70,24 @@
             })
             .then((response) => {
                 console.log(response);
+                dispatch("login", {
+                    ...response.data.data,
+                });
+            });
+    }
+
+    async function resetPwd() {
+        let payload = {
+            uname: document.getElementById("reset_uname").value,
+            pwd: document.getElementById("reset_pwd").value,
+        };
+        await axios
+            .post(`${host}/reset_password/`, payload, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+            .then((response) => {
                 dispatch("login", {
                     ...response.data.data,
                 });
@@ -140,7 +166,10 @@
             />
             <button on:click={signIn}>Sign in</button>
             <span class="signup_link"
-                >or <a href="#sign_up" on:click={show_signup}>sign up</a></span
+                ><a href="#password_reset" on:click={show_password}
+                    >forgot your password</a
+                >
+                or <a href="#sign_up" on:click={show_signup}>sign up</a></span
             >
         </div>
     {:else if sign_up}
@@ -185,6 +214,45 @@
             {/if}
             <button id="sign_up-btn" on:click={signUp} disabled={invalid_data}
                 >Sign up</button
+            >
+        </div>
+    {:else if pwd_reset}
+        <div class="user-box">
+            <h1><i>MonChat</i></h1>
+            <input
+                id="reset_uname"
+                type="text"
+                class="user_name"
+                placeholder="Enter your user name"
+            />
+            <input
+                id="reset_pwd"
+                type="password"
+                class="pwd"
+                placeholder="Create your password"
+            />
+            <input
+                id="reset_pwd_2"
+                type="password"
+                class="pwd"
+                placeholder="Re-Enter your password"
+                bind:value={pwd_entries}
+            />
+            {#if invalid_data}
+                <span style="color: tomato; font-size: 13px;"
+                    ><i>Password mismatch</i></span
+                >
+            {:else if uname_invalid}
+                <span style="color: tomato; font-size: 13px;"
+                    ><i>Username taken, try another.</i></span
+                >
+            {:else if invalid_pwd}
+                <span style="color: tomato; font-size: 13px;"
+                    ><i>Invalid password</i></span
+                >
+            {/if}
+            <button id="sign_up-btn" on:click={resetPwd} disabled={invalid_data}
+                >Reset</button
             >
         </div>
     {/if}
@@ -236,7 +304,7 @@
     }
 
     .signup_link {
-        margin-left: 200px;
+        margin-left: 40px;
         font-size: 16px;
     }
 

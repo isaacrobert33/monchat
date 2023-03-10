@@ -4,6 +4,8 @@
 	import ListContainer from "./components/ListContainer.svelte";
 	import Login from "./components/Login.svelte";
 
+	export let name;
+
 	const host = "http://127.0.0.1:8000/monchat";
 
 	let user_id = window.localStorage.getItem("monchat_user_id");
@@ -124,7 +126,6 @@
 
 	let conversations = [];
 	let openedChatData = {};
-	let socketID = null;
 
 	const openChat = async (event) => {
 		let recipient =
@@ -169,16 +170,18 @@
 			)
 			.then((response) => {
 				conversations = response.data.data;
-				socketID = response.data.socket_id;
 			});
 	};
 
 	const handleNewMsg = (event) => {
-		console.log("new msg", event.detail);
+		console.log("New msg");
+		let found = false;
 		chat_list.forEach((chat) => {
 			if (
-				chat.msg_recipient.user_name == event.detail.msg_sender ||
-				chat.msg_recipient.user_name === event.detail.msg_recipient
+				(chat.msg_recipient.user_name == event.detail.msg_sender &&
+					chat.msg_sender.user_name == event.detail.msg_recipient) ||
+				(chat.msg_recipient.user_name === event.detail.msg_recipient &&
+					chat.msg_sender.user_name === event.detail.msg_sender)
 			) {
 				let index = chat_list.indexOf(chat);
 				let c = chat_list[index];
@@ -193,12 +196,29 @@
 					msg_time: event.detail.msg_time,
 					msg_body: event.detail.msg_body,
 				};
-				console.log("up", updated);
+				found = true;
 				temp_chat_list.splice(index, 1);
 				temp_chat_list.unshift(updated);
 				chat_list = temp_chat_list;
 			}
 		});
+
+		if (!found) {
+			const chat_data = {
+				msg_recipient: {
+					...event.detail,
+					user_name: event.detail.msg_recipient,
+					user_icon: event.detail.user_icon,
+				},
+				msg_sender: user_data,
+				msg_body: event.detail.msg_body,
+				msg_time: event.detail.msg_time,
+			};
+			console.log(chat_data);
+			let tcl = chat_list;
+			tcl.unshift(chat_data);
+			chat_list = tcl;
+		}
 	};
 
 	const handleMsgRead = (event) => {
@@ -221,6 +241,26 @@
 
 	const handleNewChat = async (event) => {
 		openedChatData = event.detail;
+		await axios
+			.get(`${host}/user_status/${openedChatData.user_id}/`, {
+				headers: {
+					"Content-Type": "application/json",
+				},
+			})
+			.then((response) => {
+				let dt = new Date(response.data.data.last_seen);
+				let last_seen = `Last seen ${dt
+					.getHours()
+					.toString()
+					.padStart(2, "0")}:${dt
+					.getMinutes()
+					.toString()
+					.padStart(2, "0")}`;
+				currentChatStatus =
+					response.data.data.online_status == false
+						? last_seen
+						: "online";
+			});
 
 		await axios
 			.get(
@@ -233,30 +273,27 @@
 			)
 			.then((response) => {
 				conversations = response.data.data;
-				socketID = response.data.socket_id;
 			});
 	};
 </script>
 
-<div class="App">
+<div class="App {name}">
 	{#if !user_id}
 		<Login on:login={handleLogin} />
 	{/if}
 	{#if user_data.user_name}
 		<ListContainer
 			bind:chat_list
-			profile_img={user_data.user_icon}
-			user_name={user_data.user_name}
+			{user_data}
 			on:chatclick={openChat}
 			on:newchat={handleNewChat}
 		/>
 	{/if}
-	{#if openedChatData.user_id && socketID}
+	{#if openedChatData.user_id}
 		<ChatContainer
-			chat_recipient_data={openedChatData}
+			bind:chat_recipient_data={openedChatData}
 			{user_data}
 			bind:conversation_list={conversations}
-			{socketID}
 			chat_profile_status={currentChatStatus}
 			on:newmessage={handleNewMsg}
 			on:messageread={handleMsgRead}

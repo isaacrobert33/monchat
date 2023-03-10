@@ -5,6 +5,9 @@
     export let msg_body;
     export let msg_time;
     export let direction;
+    export let msg_date;
+    export let msg_status;
+    export let read_time;
     export let unread_count;
     export let clickCallback;
 

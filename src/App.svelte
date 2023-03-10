@@ -14,6 +14,25 @@
 	let currentChatStatus = false;
 
 	const initialize_socket = () => {
+		////// Initialize self socket
+		let socket_url = `ws://127.0.0.1:8000/ws/chat/${user_data.user_id}/`;
+		let chat_socket = new WebSocket(socket_url);
+
+		chat_socket.onopen = (e) => {
+			console.log("SOCKET OPEN FOR INCOMING MESSAGE");
+		};
+
+		chat_socket.onclose = (e) => {
+			console.log("YOUR SOCKET WAS CLOSED");
+		};
+
+		chat_socket.onmessage = (event) => {
+			let data = JSON.parse(event.data);
+			event = { detail: data };
+			console.log("Incoming", event);
+			handleNewMsg(event, "inbound");
+		};
+
 		///// Initializing online status socket
 		let online_socket_url = `ws://127.0.0.1:8000/ws/online/`;
 		let online_socket = new WebSocket(online_socket_url);
@@ -103,36 +122,10 @@
 		user_id = event.detail.user_id;
 		user_data = event.detail;
 		window.localStorage.setItem("monchat_user_id", user_id);
-		console.log("login in", event.detail);
 		fetchCL();
 	};
 
-	const sendReadReceipt = (msg_socket, msg_id) => {
-		let dt = new Date();
-		console.log("sent read receipt");
-		msg_socket.send(
-			JSON.stringify({
-				msg_id: msg_id,
-				msg_status: ("RD", "Read"),
-				read_time: dt.toISOString(),
-			})
-		);
-		document
-			.getElementById("conv_list")
-			.removeEventListener("focus", (e) => {
-				sendReadReceipt(msg_id);
-			});
-	};
-
-	let conversations = [];
-	let openedChatData = {};
-
-	const openChat = async (event) => {
-		let recipient =
-			event.detail.direction == "outbound"
-				? event.detail.msg_recipient
-				: event.detail.msg_sender;
-
+	const fetchRecipientData = async (recipient) => {
 		await axios
 			.get(`${host}/user/${recipient.user_id}/`, {
 				headers: {
@@ -153,12 +146,16 @@
 					openedChatData.online_status == false
 						? last_seen
 						: "online";
+
+				fetchChats(openedChatData);
 			})
 			.catch((err) => {
 				alert("Error fetching recipient data");
 				console.log(err);
 			});
+	};
 
+	const fetchChats = async (openedChatData) => {
 		await axios
 			.get(
 				`${host}/chats/${user_data.user_name}/${openedChatData.user_name}/`,
@@ -170,49 +167,125 @@
 			)
 			.then((response) => {
 				conversations = response.data.data;
+				let last_msg = conversations[conversations.length - 1];
+				console.log(conversations.length);
+				if (conversations.length > 0) {
+					execLastMsgAction(last_msg);
+				}
 			});
 	};
 
-	const handleNewMsg = (event) => {
-		console.log("New msg");
-		let found = false;
+	const execLastMsgAction = (last_msg) => {
+		let surl = `ws://127.0.0.1:8000/ws/read_reciept/${last_msg.msg_id}/`;
+		let last_msg_socket = new WebSocket(surl);
+
+		last_msg_socket.onclose = (e) => {
+			console.log("READ RECEIPT SOCKET CLOSED");
+		};
+
+		if (last_msg.direction == "inbound") {
+			if (last_msg.msg_status == "UD" || last_msg.msg_status == "DV") {
+				last_msg_socket.onopen = (e) => {
+					let dt = new Date();
+					console.log("sent read receipt");
+					handleMsgRead(last_msg);
+
+					last_msg_socket.send(
+						JSON.stringify({
+							msg_id: last_msg.msg_id,
+							msg_sender: openedChatData.user_name,
+							msg_recipient: user_data.user_name,
+							msg_status: "RD",
+							read_time: dt.toISOString(),
+						})
+					);
+					last_msg_socket.close();
+				};
+			} else {
+				last_msg_socket.close();
+			}
+		} else {
+			if (last_msg.msg_status == "RD") {
+				last_msg_socket.close();
+			} else {
+				console.log("Waiting for msg read");
+				last_msg_socket.onmessage = (event) => {
+					console.log("Message read!");
+					let data = JSON.parse(event.data);
+					handleMsgRead(data, last_msg.direction);
+				};
+			}
+		}
+	};
+
+	let conversations = [];
+	let openedChatData = {};
+
+	const openChat = async (event) => {
+		let recipient =
+			event.detail.direction == "outbound"
+				? event.detail.msg_recipient
+				: event.detail.msg_sender;
+
+		fetchRecipientData(recipient);
+	};
+
+	const updateSideBarChats = (new_chat) => {
+		let updated = false;
+		console.log("Side bar update", new_chat);
 		chat_list.forEach((chat) => {
 			if (
-				(chat.msg_recipient.user_name == event.detail.msg_sender &&
-					chat.msg_sender.user_name == event.detail.msg_recipient) ||
-				(chat.msg_recipient.user_name === event.detail.msg_recipient &&
-					chat.msg_sender.user_name === event.detail.msg_sender)
+				(chat.msg_recipient.user_name == new_chat.msg_sender &&
+					chat.msg_sender.user_name == new_chat.msg_recipient) ||
+				(chat.msg_recipient.user_name === new_chat.msg_recipient &&
+					chat.msg_sender.user_name === new_chat.msg_sender)
 			) {
 				let index = chat_list.indexOf(chat);
-				let c = chat_list[index];
+				let actualChat = chat_list[index];
 				let temp_chat_list = chat_list;
 
-				let updated = {
-					...c,
+				let date = new Date(new_chat.msg_time);
+				let fTime =
+					new_chat.direction == "outbound"
+						? new_chat.msg_time
+						: `${date.getHours().toString().padStart(2, "0")}:${date
+								.getMinutes()
+								.toString()
+								.padStart(2, "0")}`;
+
+				console.log("fTime:", fTime);
+				let updated_data = {
+					direction: new_chat.direction,
 					unread_count:
-						event.detail.direction == "inbound"
-							? c.unread_count + 1
-							: c.unread_count,
-					msg_time: event.detail.msg_time,
-					msg_body: event.detail.msg_body,
+						new_chat.direction == "inbound"
+							? actualChat.unread_count + 1
+							: actualChat.unread_count,
+					msg_time: fTime,
+					msg_body: new_chat.msg_body,
+					msg_sender: actualChat.msg_sender,
+					msg_recipient: actualChat.msg_recipient,
+					msg_status: new_chat.msg_status,
+					msg_id: new_chat.msg_id,
 				};
-				found = true;
+
+				updated = true;
 				temp_chat_list.splice(index, 1);
-				temp_chat_list.unshift(updated);
+				temp_chat_list.unshift(updated_data);
+				console.log(temp_chat_list);
 				chat_list = temp_chat_list;
 			}
 		});
 
-		if (!found) {
+		if (!updated) {
 			const chat_data = {
 				msg_recipient: {
-					...event.detail,
-					user_name: event.detail.msg_recipient,
-					user_icon: event.detail.user_icon,
+					...new_chat,
+					user_name: new_chat.msg_recipient,
+					user_icon: new_chat.user_icon,
 				},
 				msg_sender: user_data,
-				msg_body: event.detail.msg_body,
-				msg_time: event.detail.msg_time,
+				msg_body: new_chat.msg_body,
+				msg_time: new_chat.msg_time,
 			};
 			console.log(chat_data);
 			let tcl = chat_list;
@@ -221,26 +294,121 @@
 		}
 	};
 
-	const handleMsgRead = (event) => {
-		console.log("Read");
-		chat_list.forEach((chat) => {
-			if (
-				chat.msg_recipient.user_name == event.detail.msg_sender ||
-				chat.msg_recipient.user_name === event.detail.msg_recipient
-			) {
-				let index = chat_list.indexOf(chat);
-				let c = chat_list[index];
-				let updated = {
-					...c,
-					unread_count: 0,
-				};
-				chat_list[index] = updated;
+	var msg_socket;
+	const handleNewMsg = (event, direction = "outbound") => {
+		updateSideBarChats(event.detail);
+		let conv_data = event.detail;
+
+		if (msg_socket) {
+			msg_socket.close();
+		}
+		console.log(openedChatData.user_name, conv_data.msg_sender);
+		if (openedChatData.user_name == conv_data.msg_sender) {
+			console.log("CURRENTLY OPENED");
+		}
+		msg_socket = new WebSocket(
+			`ws://127.0.0.1:8000/ws/read_reciept/${conv_data.msg_id}/`
+		);
+		msg_socket.onopen = (e) => {
+			console.log("SOCKET OPENED FOR READ RECEIPT -", conv_data.msg_id);
+		};
+
+		msg_socket.onclose = (e) => {
+			console.log("READ RECEIPT SOCKET CLOSED -", conv_data.msg_id);
+		};
+
+		console.log("dir", direction);
+		if (direction == "inbound") {
+			let date = new Date(conv_data.msg_time);
+
+			conv_data.msg_time = `${date
+				.getHours()
+				.toString()
+				.padStart(2, "0")}:${date
+				.getMinutes()
+				.toString()
+				.padStart(2, "0")}`;
+			conv_data.direction = "inbound";
+
+			conversations = [...conversations, conv_data];
+
+			let chatlist_node = document.getElementById("chat_con");
+			if (chatlist_node) {
+				chatlist_node.scrollTop =
+					document.getElementById("conv_list").scrollHeight;
 			}
-		});
+
+			const sendReadReceipt = () => {
+				let dt = new Date();
+
+				console.log("sent read receipt");
+				handleMsgRead(conv_data, direction);
+				msg_socket.send(
+					JSON.stringify({
+						msg_id: conv_data.msg_id,
+						msg_status: "RD",
+						read_time: dt.toISOString(),
+					})
+				);
+				document.removeEventListener("mousemove", sendReadReceipt);
+			};
+
+			document.addEventListener("mousemove", sendReadReceipt);
+		} else {
+			console.log("Listening for read receipt");
+			msg_socket.onmessage = (event) => {
+				const data = JSON.parse(event.data);
+				console.log("Message status changed", data);
+				handleMsgRead(data, direction);
+			};
+		}
+	};
+
+	const handleMsgRead = (event, direction) => {
+		if (direction == "outbound") {
+			let chat_index = conversations.length - 1;
+
+			for (let i = 0; i < conversations.length; i++) {
+				if (conversations[i].msg_id == event.msg_id) {
+					chat_index = i;
+					break;
+				}
+			}
+
+			let temp = conversations;
+			for (let j = 0; j < temp.length; j++) {
+				temp[j].msg_status = "RD";
+				console.log(j, chat_index, temp[j]);
+				if (j == chat_index) {
+					break;
+				}
+			}
+
+			conversations = temp;
+		} else {
+			chat_list.forEach((chat) => {
+				if (
+					(chat.msg_recipient.user_name == event.msg_sender &&
+						chat.msg_sender.user_name == event.msg_recipient) ||
+					(chat.msg_recipient.user_name === event.msg_recipient &&
+						chat.msg_sender.user_name === event.msg_sender)
+				) {
+					let index = chat_list.indexOf(chat);
+					let c = chat_list[index];
+					let updated = {
+						...c,
+						unread_count: 0,
+					};
+
+					chat_list[index] = updated;
+				}
+			});
+		}
 	};
 
 	const handleNewChat = async (event) => {
 		openedChatData = event.detail;
+		console.log("new chat");
 		await axios
 			.get(`${host}/user_status/${openedChatData.user_id}/`, {
 				headers: {
@@ -295,7 +463,7 @@
 			{user_data}
 			bind:conversation_list={conversations}
 			chat_profile_status={currentChatStatus}
-			on:newmessage={handleNewMsg}
+			on:newmessagesent={handleNewMsg}
 			on:messageread={handleMsgRead}
 		/>
 	{/if}

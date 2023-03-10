@@ -3,6 +3,7 @@
     import { onMount } from "svelte";
     import ChatCard from "./ChatCard.svelte";
     import { createEventDispatcher } from "svelte";
+    import { v4 as uuidv4 } from "uuid";
 
     var host = "http://127.0.0.1:8000";
     const dispatch = createEventDispatcher();
@@ -12,95 +13,13 @@
     export let chat_profile_status;
     export let conversation_list = [];
 
-    console.log(user_data.online_status);
-
-    ////// Initializing Chat Socket
-    let socket_url = `ws://127.0.0.1:8000/ws/chat/${user_data.user_id}/`;
-    let chat_socket = new WebSocket(socket_url);
-
-    chat_socket.onmessage = function (event) {
-        const data = JSON.parse(event.data);
-        let dt = new Date(data.msg_time);
-
-        data.msg_time = `${dt.getHours().toString().padStart(2, "0")}:${dt
-            .getMinutes()
-            .toString()
-            .padStart(2, "0")}`;
-        data.direction =
-            data.msg_sender == user_data.user_name ? "outbound" : "inbound";
-
-        if (chat_profile_status == "online") {
-            data.msg_status = "DV";
-        }
-        console.log("New message", data);
-
-        conversation_list = [...conversation_list, data];
-
-        dispatch("newmessage", data);
-
-        var msg_socket = new WebSocket(
-            `ws://127.0.0.1:8000/ws/read_reciept/${data.msg_id}/`
-        );
-        msg_socket.onopen = (e) => {
-            console.log("SOCKET OPENED FOR READ RECEIPT");
-        };
-
-        msg_socket.onclose = (e) => {
-            console.log("READ RECEIPT SOCKET CLOSED UNEXPECTEDLY");
-        };
-
-        msg_socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log("Message status changed", data);
-            conversation_list.forEach((chat) => {
-                if (chat.msg_id === data.msg_id) {
-                    conversation_list[
-                        conversation_list.indexOf(chat)
-                    ].msg_status = data.msg_status;
-                    msg_socket.close();
-                }
-            });
-        };
-
-        const sendReadReceipt = () => {
-            let dt = new Date();
-            console.log("sent read receipt");
-
-            dispatch("messageread", data);
-
-            msg_socket.send(
-                JSON.stringify({
-                    msg_id: data.msg_id,
-                    msg_status: "RD",
-                    read_time: dt.toISOString(),
-                })
-            );
-            document
-                .getElementById("conv_list")
-                .removeEventListener("mousemove", sendReadReceipt);
-        };
-
-        console.log(msg_socket);
-
-        if (data.msg_recipient == user_data.user_name) {
-            document
-                .getElementById("conv_list")
-                .addEventListener("mousemove", sendReadReceipt);
-        }
-
-        let chatlist_node = document.getElementById("chat_con");
-        chatlist_node.scrollTop =
-            document.getElementById("conv_list").scrollHeight;
-        console.log(document.getElementById("conv_list").scrollHeight);
-    };
-
-    chat_socket.onclose = function (event) {
-        console.error("Chat socket closed unexpectedly");
-    };
-
     function deleteText(index) {
         console.log("Deleting text...");
         conversation_list = conversation_list.filter((e, i) => i !== index);
+    }
+
+    function generateID(prefix) {
+        return `${prefix}_${uuidv4()}`;
     }
 
     onMount(() => {
@@ -112,24 +31,50 @@
         msg_input.addEventListener("keydown", function (e) {
             if (e.key === "Enter") {
                 if (msg_input.value) {
+                    let socket_url = `ws://127.0.0.1:8000/ws/chat/${chat_recipient_data.user_id}/`;
+                    var chat_socket = new WebSocket(socket_url);
+
                     const date = new Date();
                     let msg_data = {
+                        msg_id: generateID("chat"),
                         first_name: chat_recipient_data.first_name,
                         last_name: chat_recipient_data.last_name,
                         user_icon: chat_recipient_data.user_icon,
                         msg_body: msg_input.value,
-                        msg_time: date.toISOString(),
                         msg_sender: user_data.user_name,
                         msg_recipient: chat_recipient_data.user_name,
                     };
-                    chat_socket.send(JSON.stringify(msg_data));
+
+                    chat_socket.onopen = (e) => {
+                        msg_data.msg_time = date.toISOString();
+                        msg_data.direction = "inbound";
+                        chat_socket.send(JSON.stringify(msg_data));
+                        chat_socket.close();
+                    };
+
+                    let temp_msg_data = { ...msg_data };
+                    temp_msg_data.msg_time = `${date
+                        .getHours()
+                        .toString()
+                        .padStart(2, "0")}:${date
+                        .getMinutes()
+                        .toString()
+                        .padStart(2, "0")}`;
+
+                    temp_msg_data.direction = "outbound";
+
+                    if (chat_profile_status == "online") {
+                        temp_msg_data.msg_status = "DV";
+                    }
+
+                    dispatch("newmessagesent", temp_msg_data);
+                    conversation_list = [...conversation_list, temp_msg_data];
                     msg_input.value = "";
                 }
             }
         });
 
         var last_msg = conversation_list[conversation_list.length - 1];
-        console.log("lms", last_msg);
 
         if (
             (last_msg && last_msg.msg_status == "UD") ||

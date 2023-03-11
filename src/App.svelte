@@ -121,7 +121,7 @@
 	const handleLogin = (event) => {
 		user_id = event.detail.user_id;
 		user_data = event.detail;
-		window.localStorage.setItem("monchat_user_id", user_id);
+		// window.localStorage.setItem("monchat_user_id", user_id);
 		fetchCL();
 	};
 
@@ -220,8 +220,19 @@
 
 	let conversations = [];
 	let openedChatData = {};
+	var activeChat;
 
 	const openChat = async (event) => {
+		// setting colors for active chats
+		if (activeChat) {
+			document.getElementById(activeChat).style.backgroundColor =
+				"#111b21";
+		}
+		document.getElementById(
+			`sidebar-${event.detail.msg_id}`
+		).style.backgroundColor = "#202c33";
+		activeChat = `sidebar-${event.detail.msg_id}`;
+
 		let recipient =
 			event.detail.direction == "outbound"
 				? event.detail.msg_recipient
@@ -232,7 +243,7 @@
 
 	const updateSideBarChats = (new_chat) => {
 		let updated = false;
-		console.log("Side bar update", new_chat);
+
 		chat_list.forEach((chat) => {
 			if (
 				(chat.msg_recipient.user_name == new_chat.msg_sender &&
@@ -253,7 +264,6 @@
 								.toString()
 								.padStart(2, "0")}`;
 
-				console.log("fTime:", fTime);
 				let updated_data = {
 					direction: new_chat.direction,
 					unread_count:
@@ -262,34 +272,44 @@
 							: actualChat.unread_count,
 					msg_time: fTime,
 					msg_body: new_chat.msg_body,
-					msg_sender: actualChat.msg_sender,
-					msg_recipient: actualChat.msg_recipient,
+					msg_sender: actualChat.msg_recipient,
+					msg_recipient: actualChat.msg_sender,
 					msg_status: new_chat.msg_status,
 					msg_id: new_chat.msg_id,
 				};
-
+				console.log("Updt", updated_data);
 				updated = true;
 				temp_chat_list.splice(index, 1);
 				temp_chat_list.unshift(updated_data);
-				console.log(temp_chat_list);
 				chat_list = temp_chat_list;
 			}
 		});
 
 		if (!updated) {
+			console.log("new_chat", new_chat);
+
+			let date = new Date(new_chat.msg_time);
+
+			let fTime = `${date.getHours().toString().padStart(2, "0")}:${date
+				.getMinutes()
+				.toString()
+				.padStart(2, "0")}`;
 			const chat_data = {
-				msg_recipient: {
-					...new_chat,
-					user_name: new_chat.msg_recipient,
-					user_icon: new_chat.user_icon,
-				},
-				msg_sender: user_data,
+				msg_recipient: new_chat.recipient_data,
+				msg_sender:
+					user_data.user_name == new_chat.msg_sender
+						? user_data
+						: new_chat.sender_data,
 				msg_body: new_chat.msg_body,
-				msg_time: new_chat.msg_time,
+				msg_time:
+					new_chat.direction == "inbound" ? fTime : new_chat.msg_time,
+				direction: new_chat.direction,
+				unread_count: new_chat.direction == "inbound" ? 1 : 0,
 			};
-			console.log(chat_data);
+			console.log("chat_data", chat_data);
 			let tcl = chat_list;
 			tcl.unshift(chat_data);
+
 			chat_list = tcl;
 		}
 	};
@@ -302,10 +322,7 @@
 		if (msg_socket) {
 			msg_socket.close();
 		}
-		console.log(openedChatData.user_name, conv_data.msg_sender);
-		if (openedChatData.user_name == conv_data.msg_sender) {
-			console.log("CURRENTLY OPENED");
-		}
+
 		msg_socket = new WebSocket(
 			`ws://127.0.0.1:8000/ws/read_reciept/${conv_data.msg_id}/`
 		);
@@ -317,7 +334,6 @@
 			console.log("READ RECEIPT SOCKET CLOSED -", conv_data.msg_id);
 		};
 
-		console.log("dir", direction);
 		if (direction == "inbound") {
 			let date = new Date(conv_data.msg_time);
 
@@ -333,6 +349,7 @@
 			conversations = [...conversations, conv_data];
 
 			let chatlist_node = document.getElementById("chat_con");
+
 			if (chatlist_node) {
 				chatlist_node.scrollTop =
 					document.getElementById("conv_list").scrollHeight;
@@ -352,8 +369,13 @@
 				);
 				document.removeEventListener("mousemove", sendReadReceipt);
 			};
-
-			document.addEventListener("mousemove", sendReadReceipt);
+			console.log("op", openedChatData);
+			if (
+				openedChatData &&
+				openedChatData.user_name == conv_data.msg_sender
+			) {
+				document.addEventListener("mousemove", sendReadReceipt);
+			}
 		} else {
 			console.log("Listening for read receipt");
 			msg_socket.onmessage = (event) => {
@@ -378,7 +400,6 @@
 			let temp = conversations;
 			for (let j = 0; j < temp.length; j++) {
 				temp[j].msg_status = "RD";
-				console.log(j, chat_index, temp[j]);
 				if (j == chat_index) {
 					break;
 				}
@@ -408,7 +429,7 @@
 
 	const handleNewChat = async (event) => {
 		openedChatData = event.detail;
-		console.log("new chat");
+
 		await axios
 			.get(`${host}/user_status/${openedChatData.user_id}/`, {
 				headers: {

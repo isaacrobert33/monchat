@@ -15,7 +15,7 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div id={msg_id} class="list-item" on:click={clickCallback}>
+<div id={`sidebar-${msg_id}`} class="list-item" on:click={clickCallback}>
     <img
         src={`${host}/media/${
             direction == "outbound"

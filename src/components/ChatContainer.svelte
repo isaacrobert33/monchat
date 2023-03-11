@@ -37,9 +37,20 @@
                     const date = new Date();
                     let msg_data = {
                         msg_id: generateID("chat"),
-                        first_name: chat_recipient_data.first_name,
-                        last_name: chat_recipient_data.last_name,
-                        user_icon: chat_recipient_data.user_icon,
+                        recipient_data: {
+                            user_id: chat_recipient_data.user_id,
+                            user_name: chat_recipient_data.user_name,
+                            user_icon: chat_recipient_data.user_icon,
+                            first_name: chat_recipient_data.first_name,
+                            last_name: chat_recipient_data.last_name,
+                        },
+                        sender_data: {
+                            user_id: user_data.user_id,
+                            user_name: user_data.user_name,
+                            user_icon: user_data.user_icon,
+                            first_name: user_data.first_name,
+                            last_name: user_data.last_name,
+                        },
                         msg_body: msg_input.value,
                         msg_sender: user_data.user_name,
                         msg_recipient: chat_recipient_data.user_name,
@@ -66,7 +77,7 @@
                     if (chat_profile_status == "online") {
                         temp_msg_data.msg_status = "DV";
                     }
-
+                    console.log("New message here");
                     dispatch("newmessagesent", temp_msg_data);
                     conversation_list = [...conversation_list, temp_msg_data];
                     msg_input.value = "";

@@ -13,6 +13,11 @@
     var originalUsers = [];
     var users = [];
 
+    let originalChatList = [];
+    $: if (!originalChatList.length > 0) {
+        originalChatList = chat_list;
+    }
+
     function handleChatClick(chat) {
         dispatch("chatclick", {
             ...chat,
@@ -171,11 +176,11 @@
     const execUserSearch = (q) => {
         let result = [];
         q = q.toLowerCase();
-        console.log(q);
         originalUsers.forEach((user) => {
             if (
                 user.first_name.toLowerCase().includes(q) ||
-                user.last_name.toLowerCase().includes(q)
+                user.last_name.toLowerCase().includes(q) ||
+                user.user_name.includes(q)
             ) {
                 result.push(user);
             }
@@ -187,6 +192,45 @@
         execUserSearch(userSearchQ);
     } else {
         users = originalUsers;
+    }
+
+    const execChatSearch = (q) => {
+        let result = [];
+        q = q.toLowerCase();
+        console.log(originalChatList);
+        originalChatList.forEach((chat) => {
+            if (
+                chat.msg_body.toLowerCase().includes(q) ||
+                (chat.msg_recipient.first_name.toLowerCase().includes(q) &&
+                    chat.direction == "outbound") ||
+                (chat.msg_recipient.last_name.toLowerCase().includes(q) &&
+                    chat.direction == "outbound") ||
+                (chat.msg_recipient.user_name.toLowerCase().includes(q) &&
+                    chat.direction == "outbound") ||
+                (chat.msg_sender.first_name.toLowerCase().includes(q) &&
+                    chat.direction == "inbound") ||
+                (chat.msg_sender.last_name.toLowerCase().includes(q) &&
+                    chat.direction == "inbound") ||
+                (chat.msg_sender.user_name.toLowerCase().includes(q) &&
+                    chat.direction == "inbound")
+            ) {
+                result.push(chat);
+            }
+        });
+        if (q) {
+            console.log("res", result);
+            chat_list = result;
+        } else {
+            console.log("none", originalChatList);
+            chat_list = originalChatList;
+        }
+    };
+
+    let chatSearchQ = "";
+
+    $: {
+        console.log(chatSearchQ);
+        execChatSearch(chatSearchQ);
     }
 </script>
 
@@ -318,11 +362,29 @@
                     <li on:click={logout}>Logout</li>
                 </ul>
             </div>
-            <input
-                type="text"
-                class="chat-search"
-                placeholder="Search or start a new chat"
-            />
+            <div class="search-bar">
+                <svg
+                    width="24px"
+                    height="24px"
+                    viewBox="0 0 24 24"
+                    fill="#f0ffff80"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        d="M11.01 20.02C15.9861 20.02 20.02 15.9861 20.02 11.01C20.02 6.03391 15.9861 2 11.01 2C6.03391 2 2 6.03391 2 11.01C2 15.9861 6.03391 20.02 11.01 20.02Z"
+                    />
+                    <path
+                        d="M21.9901 18.95C21.6601 18.34 20.9601 18 20.0201 18C19.3101 18 18.7001 18.29 18.3401 18.79C17.9801 19.29 17.9001 19.96 18.1201 20.63C18.5501 21.93 19.3001 22.22 19.7101 22.27C19.7701 22.28 19.8301 22.28 19.9001 22.28C20.3401 22.28 21.0201 22.09 21.6801 21.1C22.2101 20.33 22.3101 19.56 21.9901 18.95Z"
+                    />
+                </svg>
+                <input
+                    type="text"
+                    class="chat-search"
+                    bind:value={chatSearchQ}
+                    placeholder="Search or start a new chat"
+                />
+            </div>
+
             <svg
                 class="filter"
                 viewBox="0 0 24 24"
@@ -422,7 +484,7 @@
                             alt={user.user_id}
                         />
                         <span class="name"
-                            >{`${user.first_name} ${user.last_name}`}</span
+                            ><b>{`${user.first_name} ${user.last_name}`}</b> • {`${user.user_name}`}</span
                         >
                         <span class="bio-text"
                             >{user.user_bio.length < 50
@@ -491,11 +553,26 @@
         margin-left: 10px;
     }
 
-    .chat-search {
+    .search-bar {
         width: 85%;
+        padding: 0;
         margin-left: 10px;
+        border-radius: 15px;
+        display: inline-block;
+        margin-bottom: 10px;
         background-color: #202c33;
-        border-radius: 9px;
+    }
+    .search-bar svg {
+        color: #f0ffff80;
+        font-size: 7px;
+        margin: 3px;
+        position: absolute;
+    }
+    .chat-search {
+        width: 86%;
+        margin: 0;
+        margin-left: 27px;
+        background-color: #202c33;
         border: none;
         color: #f0ffff;
         outline: none;
@@ -645,7 +722,6 @@
         padding: 2px;
         margin-top: 12px;
         left: 75px;
-        font-weight: bold;
         position: absolute;
     }
 

@@ -225,12 +225,13 @@
 	const openChat = async (event) => {
 		// setting colors for active chats
 		if (activeChat) {
+			console.log(activeChat);
 			document.getElementById(activeChat).style.backgroundColor =
 				"#111b21";
 		}
 		document.getElementById(
 			`sidebar-${event.detail.msg_id}`
-		).style.backgroundColor = "#202c33";
+		).style.backgroundColor = "#2a3942";
 		activeChat = `sidebar-${event.detail.msg_id}`;
 
 		let recipient =

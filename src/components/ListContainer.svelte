@@ -29,22 +29,24 @@
         let drop_down_list = document.getElementById("menu_list");
 
         let not_found = true;
-        drop_down_list.childNodes.forEach((node) => {
-            console.log(node === e.target);
-            if (node === e.target) {
-                not_found = false;
-            }
-        });
+        if (drop_down_list) {
+            drop_down_list.childNodes.forEach((node) => {
+                if (node === e.target) {
+                    not_found = false;
+                }
+            });
+        }
 
-        if (not_found) {
+        if (not_found && drop_down) {
             drop_down.style.opacity = "0";
             setTimeout((e) => {
                 drop_down.style.display = "none";
             }, 1200);
             setTimeout((e) => {
-                console.log("removing lst");
                 document.removeEventListener("click", hide_menu);
             }, 500);
+        } else {
+            document.removeEventListener("click", hide_menu);
         }
     }
 
@@ -54,7 +56,6 @@
         drop_down.style.display = "block";
 
         setTimeout((e) => {
-            console.log("listerner set");
             document.addEventListener("click", hide_menu);
         }, 500);
     }
@@ -67,6 +68,8 @@
     function showSettings(e) {
         // settings page
     }
+
+    var newGroupUsers = [];
 
     async function upload() {
         let fileInput = document.getElementById("file_input");
@@ -252,7 +255,6 @@
     let chatSearchQ = "";
 
     $: {
-        console.log(chatSearchQ);
         execChatSearch(chatSearchQ);
     }
 </script>
@@ -380,6 +382,14 @@
             <div class="menu-dropdown" id="menu_dropdown">
                 <ul id="menu_list">
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <li
+                        on:click={(e) => {
+                            sidebar = "new_group";
+                        }}
+                    >
+                        New Group
+                    </li>
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <li on:click={showSettings}>Settings</li>
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <li on:click={logout}>Logout</li>
@@ -492,6 +502,7 @@
             </div>
             <input
                 id="user_search"
+                class="user-search"
                 type="text"
                 placeholder="Search for a user"
                 bind:value={userSearchQ}
@@ -502,6 +513,86 @@
                     <li
                         on:click={(e) => {
                             dispatch("newchat", user);
+                        }}
+                        title={user.user_bio}
+                    >
+                        <img
+                            src={`${host}/media/${user.user_icon}/`}
+                            alt={user.user_id}
+                        />
+                        <span class="name"
+                            ><b>{`${user.first_name} ${user.last_name}`}</b> • {`${user.user_name}`}</span
+                        >
+                        <span class="bio-text"
+                            >{user.user_bio.length < 50
+                                ? user.user_bio
+                                : `${user.user_bio.slice(0, 50)}...`}</span
+                        >
+                    </li>
+                {/each}
+            </ul>
+        </div>
+    {:else if sidebar == "new_group"}
+        <div id="new_group" class="new-group">
+            <div class="side-topbar">
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <span class="back-arrow" on:click={(e) => (sidebar = "chats")}>
+                    <svg
+                        viewBox="0 0 24 24"
+                        height="24"
+                        width="24"
+                        preserveAspectRatio="xMidYMid meet"
+                        class=""
+                        version="1.1"
+                        x="0px"
+                        y="0px"
+                        enable-background="new 0 0 24 24"
+                        xml:space="preserve"
+                        ><path
+                            fill="currentColor"
+                            d="M12,4l1.4,1.4L7.8,11H20v2H7.8l5.6,5.6L12,20l-8-8L12,4z"
+                        /></svg
+                    >
+                </span>
+                <h2>Add the group members</h2>
+            </div>
+            <div class="group-members">
+                {#each newGroupUsers as user}
+                    <span class="new-member">
+                        <img
+                            src={`${host}/media/${user.user_icon}/`}
+                            alt={user.user_id}
+                        />
+                        <span class="member-name"
+                            >{`${user.first_name} ${user.last_name}`}</span
+                        >
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
+                        <span
+                            class="member-cancel"
+                            on:click={(e) => {
+                                console.log(
+                                    user,
+                                    newGroupUsers.indexOf(user),
+                                    newGroupUsers
+                                );
+                                let n = newGroupUsers.splice(
+                                    newGroupUsers.indexOf(user),
+                                    1
+                                );
+                                console.log(n);
+                                newGroupUsers = n;
+                            }}>&times;</span
+                        >
+                    </span>
+                {/each}
+            </div>
+            <input class="user-search" placeholder="Enter user's name" />
+            <ul>
+                {#each users as user, index}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <li
+                        on:click={(e) => {
+                            newGroupUsers = [...newGroupUsers, user];
                         }}
                         title={user.user_bio}
                     >
@@ -772,7 +863,7 @@
         background-color: #202c33;
     }
 
-    #user_search {
+    .user-search {
         margin-left: 26px;
         background-color: #202c338c;
         border: none;
@@ -810,5 +901,80 @@
     }
     .menu-dropdown li:hover {
         background-color: #111b21;
+    }
+
+    .new-group {
+        width: 100%;
+        height: 100%;
+        padding: 10px 0;
+        color: azure;
+    }
+
+    .group-members {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .new-group ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    .new-group li {
+        margin: 0;
+        padding: 5px;
+        cursor: pointer;
+        display: flex;
+        flex-wrap: wrap;
+        list-style-type: none;
+    }
+
+    .new-group li img {
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        margin: 5px;
+    }
+
+    .new-group li .name {
+        text-align: center;
+        padding: 2px;
+        margin-top: 12px;
+        left: 75px;
+        position: absolute;
+    }
+
+    .new-group li .bio-text {
+        left: 75px;
+        font-size: 12px;
+        margin-top: 35px;
+        text-align: center;
+        position: absolute;
+    }
+
+    .new-group li:hover {
+        background-color: #202c33;
+    }
+    .new-member {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 5px;
+    }
+    .new-member img {
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        margin: 2px;
+    }
+
+    .new-member .member-name {
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .member-cancel {
+        cursor: pointer;
+        margin-left: 5px;
+        font-size: 19px;
     }
 </style>

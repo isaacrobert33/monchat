@@ -226,6 +226,29 @@
         }
     };
 
+    var filter = false;
+    const filterChats = (e) => {
+        document.getElementById("filter").style.backgroundColor = filter
+            ? "transparent"
+            : "#00a884";
+        document.getElementsByClassName("filter")[0].style.color = filter
+            ? "#f0ffff80"
+            : "azure";
+        if (filter) {
+            chat_list = originalChatList;
+            filter = false;
+        } else {
+            let unreadFilter = [];
+            originalChatList.forEach((chat) => {
+                if (chat.unread_count > 0) {
+                    unreadFilter.push(chat);
+                }
+            });
+            chat_list = unreadFilter;
+            filter = true;
+        }
+    };
+
     let chatSearchQ = "";
 
     $: {
@@ -384,24 +407,27 @@
                     placeholder="Search or start a new chat"
                 />
             </div>
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <span id="filter" on:click={filterChats}>
+                <svg
+                    class="filter"
+                    viewBox="0 0 24 24"
+                    height="22"
+                    width="22"
+                    preserveAspectRatio="xMidYMid meet"
+                    version="1.1"
+                    x="0px"
+                    y="0px"
+                    enable-background="new 0 0 24 24"
+                    xml:space="preserve"
+                >
+                    <path
+                        fill="currentColor"
+                        d="M10,18.1h4v-2h-4V18.1z M3,6.1v2h18v-2H3z M6,13.1h12v-2H6V13.1z"
+                    />
+                </svg>
+            </span>
 
-            <svg
-                class="filter"
-                viewBox="0 0 24 24"
-                height="22"
-                width="22"
-                preserveAspectRatio="xMidYMid meet"
-                version="1.1"
-                x="0px"
-                y="0px"
-                enable-background="new 0 0 24 24"
-                xml:space="preserve"
-            >
-                <path
-                    fill="currentColor"
-                    d="M10,18.1h4v-2h-4V18.1z M3,6.1v2h18v-2H3z M6,13.1h12v-2H6V13.1z"
-                />
-            </svg>
             {#if chat_list.length > 0}
                 {#each chat_list as chat}
                     <ListItem
@@ -580,8 +606,17 @@
 
     .filter {
         color: #f0ffff80;
-        margin-left: 10px;
         cursor: pointer;
+    }
+
+    #filter {
+        position: absolute;
+        border-radius: 50%;
+        padding: 2px;
+        width: 25px;
+        height: 25px;
+        margin-left: 10px;
+        text-align: center;
     }
 
     .menu-dropdown {

@@ -11,6 +11,7 @@
     const dispatch = createEventDispatcher();
     const host = "http://127.0.0.1:8000";
     var originalUsers = [];
+    var users4group = [];
     var users = [];
 
     let originalChatList = [];
@@ -71,6 +72,24 @@
 
     var newGroupUsers = [];
 
+    async function createNewGroup() {
+        let mb = newGroupUsers.map((user) => user.user_id);
+        let payload = {
+            name: "",
+            description: "",
+            members: mb,
+        };
+        await axios.post(
+            `${host}/monchat/group/${user_data.user_id}/`,
+            payload,
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+    }
+
     async function upload() {
         let fileInput = document.getElementById("file_input");
         const file = fileInput.files[0];
@@ -106,9 +125,38 @@
             });
     }
 
+    async function uploadGroupIcon() {
+        let fileInput = document.getElementById("group_file_input");
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+
+        await axios
+            .post(
+                `${host}/monchat/group_upload/${user_data.user_id}/`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            )
+            .then((response) => {
+                console.log(response);
+            })
+            .catch((err) => {
+                alert(err);
+            });
+    }
+
     let uploadedFile = [];
     $: if (uploadedFile.length > 0) {
         upload();
+    }
+
+    let groupIcon = [];
+    $: if (groupIcon.length > 0) {
+        uploadGroupIcon();
     }
 
     async function getUsers() {
@@ -121,18 +169,12 @@
             .then((response) => {
                 users = response.data.data;
                 originalUsers = users;
+                users4group = users;
             });
     }
 
-    // onMount(() => {
-    //     let fileBtn = document.getElementById("file_input");
-    //     let profileBtn = document.getElementById("profile-bg");
-    //     profileBtn.addEventListener("click", () => {
-    //         fileBtn.click();
-    //     });
-    // });
-
-    var sidebar = "chats";
+    var sidebar = "new_group";
+    // "chats";
     var mutated = false;
 
     $: if (sidebar === "profile") {
@@ -170,10 +212,17 @@
             .catch((err) => {
                 alert(err);
             });
+    } else if (sidebar == "new_group") {
+        let fileIn = document.getElementById("group_file_input");
+        let btn = document.getElementById("group_icon_btn");
+        btn.addEventListener("click", (e) => {
+            fileIn.click();
+        });
     } else {
         getUsers();
     }
 
+    var usersIndex = {};
     var userSearchQ;
 
     const execUserSearch = (q) => {
@@ -384,7 +433,7 @@
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <li
                         on:click={(e) => {
-                            sidebar = "new_group";
+                            sidebar = "new_group_choice";
                         }}
                     >
                         New Group
@@ -532,7 +581,7 @@
                 {/each}
             </ul>
         </div>
-    {:else if sidebar == "new_group"}
+    {:else if sidebar == "new_group_choice"}
         <div id="new_group" class="new-group">
             <div class="side-topbar">
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -554,7 +603,7 @@
                         /></svg
                     >
                 </span>
-                <h2>Add the group members</h2>
+                <h3>Add the group members</h3>
             </div>
             <div class="group-members">
                 {#each newGroupUsers as user}
@@ -570,17 +619,15 @@
                         <span
                             class="member-cancel"
                             on:click={(e) => {
-                                console.log(
-                                    user,
-                                    newGroupUsers.indexOf(user),
-                                    newGroupUsers
-                                );
-                                let n = newGroupUsers.splice(
-                                    newGroupUsers.indexOf(user),
-                                    1
-                                );
-                                console.log(n);
+                                let n = [...newGroupUsers];
+                                n.splice(newGroupUsers.indexOf(user), 1);
                                 newGroupUsers = n;
+                                users4group.splice(
+                                    usersIndex[user.user_name],
+                                    0,
+                                    user
+                                );
+                                users4group = users4group;
                             }}>&times;</span
                         >
                     </span>
@@ -588,11 +635,15 @@
             </div>
             <input class="user-search" placeholder="Enter user's name" />
             <ul>
-                {#each users as user, index}
+                {#each users4group as user, index}
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
                     <li
                         on:click={(e) => {
                             newGroupUsers = [...newGroupUsers, user];
+                            let n = users4group;
+                            n.splice(users4group.indexOf(user), 1);
+                            users4group = n;
+                            usersIndex[user.user_name] = index;
                         }}
                         title={user.user_bio}
                     >
@@ -611,6 +662,106 @@
                     </li>
                 {/each}
             </ul>
+            {#if newGroupUsers.length > 0}
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <span
+                    class="group-btn"
+                    on:click={(e) => {
+                        sidebar = "new_group";
+                    }}
+                >
+                    <svg
+                        viewBox="0 0 30 30"
+                        height="30"
+                        width="30"
+                        preserveAspectRatio="xMidYMid meet"
+                        class=""
+                        version="1.1"
+                        x="0px"
+                        y="0px"
+                        enable-background="new 0 0 30 30"
+                        xml:space="preserve"
+                        ><path
+                            fill="currentColor"
+                            d="M15,7l-1.4,1.4l5.6,5.6H7v2h12.2l-5.6,5.6L15,23l8-8L15,7z"
+                        /></svg
+                    >
+                </span>
+            {/if}
+        </div>
+    {:else if sidebar == "new_group"}
+        <div class="new_group_main">
+            <div class="side-topbar">
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <span class="back-arrow" on:click={(e) => (sidebar = "chats")}>
+                    <svg
+                        viewBox="0 0 24 24"
+                        height="24"
+                        width="24"
+                        preserveAspectRatio="xMidYMid meet"
+                        class=""
+                        version="1.1"
+                        x="0px"
+                        y="0px"
+                        enable-background="new 0 0 24 24"
+                        xml:space="preserve"
+                        ><path
+                            fill="currentColor"
+                            d="M12,4l1.4,1.4L7.8,11H20v2H7.8l5.6,5.6L12,20l-8-8L12,4z"
+                        /></svg
+                    >
+                    <h3>New Group</h3>
+                </span>
+            </div>
+
+            <span class="group-bg">
+                <svg
+                    fill="#f0ffff"
+                    viewBox="0 0 1920 1920"
+                    xmlns="http://www.w3.org/2000/svg"
+                    ><g id="SVGRepo_bgCarrier" stroke-width="0" /><g
+                        id="SVGRepo_tracerCarrier"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    /><g id="SVGRepo_iconCarrier">
+                        <path
+                            d="M735.385 336.094c218.24 0 395.977 177.624 395.977 395.976v113.137c0 121.96-56.568 229.78-143.57 302.526 94.13 13.916 187.354 34.959 278.315 64.6 122.414 39.825 204.664 155.676 204.664 288.159v200.364l-26.814 16.63c-148.434 92.32-392.017 202.515-708.572 202.515-174.795 0-439.76-35.186-708.685-202.514L0 1700.856v-189.39c0-140.629 89.264-263.042 221.973-304.79 85.418-26.7 172.533-46.498 260.327-59.509-86.55-72.746-142.891-180.339-142.891-301.96V732.07c0-218.352 177.623-395.976 395.976-395.976ZM1183.405 0c218.24 0 395.976 177.624 395.976 395.977v113.136c0 121.96-56.568 229.893-143.57 302.526 94.13 13.916 187.241 35.072 278.316 64.6 122.413 40.051 204.663 155.79 204.663 288.272v200.364l-26.7 16.631c-77.612 48.31-181.81 101.03-308.183 140.742v-21.723c0-181.696-113.589-340.766-282.727-395.75a1720.133 1720.133 0 0 0-111.553-32.244c35.751-69.805 54.871-147.416 54.871-227.29V732.104c0-250.483-182.036-457.975-420.414-500.175C886.762 95.487 1023.656 0 1183.404 0Z"
+                            fill-rule="evenodd"
+                        />
+                    </g></svg
+                >
+            </span>
+            <span
+                class="img-overlay"
+                id="group_icon_btn"
+                style="display: block;margin-left: 18%;"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    height="24"
+                    width="24"
+                    preserveAspectRatio="xMidYMid meet"
+                    class=""
+                    version="1.1"
+                    x="0px"
+                    y="0px"
+                    enable-background="new 0 0 24 24"
+                    xml:space="preserve"
+                >
+                    <path
+                        fill="currentColor"
+                        d="M21.317,4.381H10.971L9.078,2.45C8.832,2.199,8.342,1.993,7.989,1.993H4.905 c-0.352,0-0.837,0.211-1.078,0.468L1.201,5.272C0.96,5.529,0.763,6.028,0.763,6.38v1.878c0,0.003-0.002,0.007-0.002,0.01v11.189 c0,1.061,0.86,1.921,1.921,1.921h18.634c1.061,0,1.921-0.86,1.921-1.921V6.302C23.238,5.241,22.378,4.381,21.317,4.381z  M12.076,18.51c-3.08,0-5.577-2.497-5.577-5.577s2.497-5.577,5.577-5.577s5.577,2.497,5.577,5.577 C17.654,16.013,15.157,18.51,12.076,18.51z M12.076,9.004c-2.17,0-3.929,1.759-3.929,3.929s1.759,3.929,3.929,3.929 s3.929-1.759,3.929-3.929C16.004,10.763,14.245,9.004,12.076,9.004z"
+                    />
+                </svg>
+                <br />
+                <span>Add a group icon</span>
+            </span>
+            <input
+                type="file"
+                id="group_file_input"
+                bind:files={uploadedFile}
+                hidden
+            />
         </div>
     {/if}
 </div>
@@ -790,7 +941,7 @@
 
     .img-overlay {
         border-radius: 50%;
-        background-color: rgba(90, 90, 90, 0.6);
+        background-color: rgba(90, 90, 90, 0.8);
         padding: 10px;
         width: 180px;
         height: 180px;
@@ -798,6 +949,7 @@
         margin-top: -200px;
         color: azure;
         display: none;
+        cursor: pointer;
         text-align: center;
         position: absolute;
     }
@@ -976,5 +1128,41 @@
         cursor: pointer;
         margin-left: 5px;
         font-size: 19px;
+    }
+
+    .group-btn {
+        color: azure;
+        border-radius: 50%;
+        width: 46px;
+        height: 46px;
+        text-align: center;
+        position: fixed;
+        bottom: 20px;
+        left: 10%;
+        background-color: #00a884;
+    }
+    .group-btn svg {
+        margin-top: 8px;
+    }
+
+    .side-topbar h3 {
+        top: 0px;
+        left: 70px;
+        color: #f0ffff;
+        position: absolute;
+    }
+    .group-bg {
+        display: block;
+        text-align: center;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background-color: #a5dce0;
+        margin-left: 18%;
+    }
+    .group-bg svg {
+        margin-top: 35px;
+        width: 100px;
+        height: 100px;
     }
 </style>

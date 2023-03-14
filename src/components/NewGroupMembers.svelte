@@ -28,25 +28,6 @@
     });
 
     var newGroupUsers = [];
-
-    async function createNewGroup() {
-        let mb = newGroupUsers.map((user) => user.user_id);
-        let payload = {
-            name: "",
-            description: "",
-            members: mb,
-        };
-        await axios.post(
-            `${host}/monchat/group/${user_data.user_id}/`,
-            payload,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
-        );
-    }
-
     var usersIndex = {};
 </script>
 
@@ -55,7 +36,7 @@
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <span
             class="back-arrow"
-            on:click={(e) => (e) => {
+            on:click={(e) => {
                 dispatch("back", { sidebar: "chats" });
             }}
         >
@@ -136,9 +117,7 @@
         <span
             class="group-btn"
             on:click={(e) => {
-                (e) => {
-                    dispatch("newgroup", { sidebar: "new_group" });
-                };
+                dispatch("newgroup", { members: newGroupUsers });
             }}
         >
             <svg

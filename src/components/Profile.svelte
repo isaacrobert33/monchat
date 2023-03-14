@@ -1,10 +1,9 @@
 <script>
     import axios from "axios";
     import { createEventDispatcher } from "svelte";
+    import { onMount } from "svelte";
 
     export let user_data;
-    export let mutated;
-
     const host = "http://127.0.0.1:8000";
     const dispatch = createEventDispatcher();
 
@@ -47,6 +46,14 @@
     $: if (uploadedFile.length > 0) {
         upload();
     }
+    onMount((e) => {
+        let fileBtn = document.getElementById("file_input");
+        let profileBtn = document.getElementById("profile-bg");
+        profileBtn.addEventListener("click", () => {
+            fileBtn.click();
+        });
+        document.getElementById("fname").focus();
+    });
 </script>
 
 <div class="profile-page">
@@ -113,7 +120,7 @@
                 type="text"
                 placeholder="First Name"
                 value={user_data.first_name}
-                on:change={(e) => (mutated = true)}
+                on:change={(e) => dispatch("mutated", {})}
             />
             <br />
             <span class="legend">Last Name</span>
@@ -122,7 +129,7 @@
                 type="text"
                 placeholder="Last Name"
                 value={user_data.last_name}
-                on:change={(e) => (mutated = true)}
+                on:change={(e) => dispatch("mutated", {})}
             />
             <span class="legend">Your Bio</span>
             <textarea
@@ -131,7 +138,7 @@
                 type="text"
                 placeholder="Your Bio"
                 value={user_data.user_bio}
-                on:change={(e) => (mutated = true)}
+                on:change={(e) => dispatch("mutated", {})}
             />
         </div>
     </div>

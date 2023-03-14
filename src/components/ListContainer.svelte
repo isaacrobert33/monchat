@@ -29,61 +29,39 @@
     var sidebar = "chats";
     var mutated = false;
 
-    $: if (sidebar === "profile") {
-        if (mutated) {
-            axios
-                .get(`${host}/monchat/user/${user_data.user_id}/`, {
-                    headers: { "Content-Type": "application/json" },
-                })
-                .then((response) => {
-                    user_data = response.data.data;
-                });
-        }
+    var newGrpMembers = [];
 
-        setTimeout(() => {
-            let fileBtn = document.getElementById("file_input");
-            let profileBtn = document.getElementById("profile-bg");
-            profileBtn.addEventListener("click", () => {
-                fileBtn.click();
-            });
-            document.getElementById("fname").focus();
-        }, 2000);
-    } else if (sidebar === "chats" && mutated) {
+    const saveProfileChanges = async () => {
         let payload = {
             fname: document.getElementById("fname").value,
             lname: document.getElementById("lname").value,
             user_bio: document.getElementById("bio").value,
         };
-        axios
+        await axios
             .put(`${host}/monchat/user/${user_data.user_id}/`, payload, {
                 headers: { "Content-Type": "application/json" },
             })
             .then((response) => {
-                // alert(response.data.msg);
+                user_data = response.data.data;
             })
             .catch((err) => {
                 alert(err);
             });
-    } else if (sidebar == "new_group") {
-        setTimeout((f) => {
-            let fileIn = document.getElementById("group_file_input");
-            let btn = document.getElementById("group_icon_btn");
-            btn.addEventListener("click", (e) => {
-                fileIn.click();
-            });
-        }, 2000);
-    } else {
-        // getUsers();
-    }
+    };
 </script>
 
 <div class="list-container">
     {#if sidebar === "profile"}
         <Profile
-            {user_data}
-            {mutated}
+            bind:user_data
             on:onback={(e) => {
+                if (mutated) {
+                    saveProfileChanges();
+                }
                 sidebar = "chats";
+            }}
+            on:mutated={(e) => {
+                mutated = true;
             }}
         />
     {:else if sidebar == "chats"}
@@ -117,6 +95,7 @@
             {user_data}
             on:newgroup={(e) => {
                 sidebar = "new_group";
+                newGrpMembers = e.detail.members;
             }}
             on:back={(e) => {
                 sidebar = "chats";
@@ -124,8 +103,13 @@
         />
     {:else if sidebar == "new_group"}
         <NewGroup
+            members={newGrpMembers}
+            {user_data}
             on:back={(e) => {
                 sidebar = "chats";
+            }}
+            on:groupcreate={(e) => {
+                console.log("new group", e.detail);
             }}
         />
     {/if}

@@ -1,6 +1,10 @@
 <script>
     import axios from "axios";
     import { createEventDispatcher } from "svelte";
+    import { onMount } from "svelte";
+
+    export let user_data;
+    export let members;
 
     const host = "http://127.0.0.1:8000";
     const dispatch = createEventDispatcher();
@@ -29,10 +33,40 @@
             });
     }
 
-    let groupIcon = [];
-    $: if (groupIcon.length > 0) {
-        uploadGroupIcon();
+    async function createNewGroup() {
+        let payload = {
+            name: document.getElementById("group_name").value,
+            description: document.getElementById("group_desc").value,
+            members: members.map((member) => member.user_id),
+        };
+        console.log(payload);
+        await axios
+            .post(`${host}/monchat/group/${user_data.user_id}/`, payload, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+            .then((response) => {
+                if (groupIcon.length > 0) {
+                    uploadGroupIcon(response.data.data);
+                    dispatch("groupcreate", { group: response.data.data });
+                }
+            });
     }
+
+    let groupIcon = [];
+
+    var nameInserted;
+
+    onMount((e) => {
+        setTimeout((f) => {
+            let fileIn = document.getElementById("group_file_input");
+            let btn = document.getElementById("group_icon_btn");
+            btn.addEventListener("click", (e) => {
+                fileIn.click();
+            });
+        }, 2000);
+    });
 </script>
 
 <div class="new_group_main">
@@ -83,11 +117,7 @@
             </g></svg
         >
     </span>
-    <span
-        class="img-overlay"
-        id="group_icon_btn"
-        style="display: block;margin-left: 18%;"
-    >
+    <span class="img-overlay" id="group_icon_btn">
         <svg
             viewBox="0 0 24 24"
             height="24"
@@ -109,6 +139,47 @@
         <span>Add a group icon</span>
     </span>
     <input type="file" id="group_file_input" bind:files={groupIcon} hidden />
+
+    <input
+        type="text"
+        class="group-name"
+        id="group_name"
+        placeholder="Group's name"
+        bind:value={nameInserted}
+    />
+    <input
+        type="text"
+        class="group-desc"
+        id="group_desc"
+        placeholder="Group's description"
+    />
+
+    {#if nameInserted}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <span
+            class="group-btn"
+            on:click={(e) => {
+                createNewGroup();
+            }}
+        >
+            <svg
+                viewBox="0 0 24 24"
+                height="24"
+                width="24"
+                preserveAspectRatio="xMidYMid meet"
+                class=""
+                version="1.1"
+                x="0px"
+                y="0px"
+                enable-background="new 0 0 24 24"
+                xml:space="preserve"
+                ><path
+                    fill="currentColor"
+                    d="M8,17.1l-5.2-5.2l-1.7,1.7l6.9,7L22.9,5.7L21.2,4L8,17.1z"
+                /></svg
+            >
+        </span>
+    {/if}
 </div>
 
 <style>
@@ -138,11 +209,61 @@
         height: 200px;
         border-radius: 50%;
         background-color: #a5dce0;
-        margin-left: 18%;
+        margin-left: 22%;
     }
     .group-bg svg {
         margin-top: 35px;
         width: 100px;
         height: 100px;
+    }
+
+    input {
+        margin-left: 26px;
+        background-color: #202c338c;
+        border: none;
+        outline: none;
+        color: azure;
+        border-radius: 14px;
+        text-align: center;
+        margin-top: 20px;
+        width: 85%;
+    }
+    .group-btn {
+        color: azure;
+        border-radius: 50%;
+        width: 46px;
+        height: 46px;
+        text-align: center;
+        position: fixed;
+        bottom: 20px;
+        left: 12%;
+        background-color: #00a884;
+    }
+    .group-btn svg {
+        margin-top: 8px;
+    }
+
+    .img-overlay {
+        border-radius: 50%;
+        background-color: rgba(90, 90, 90, 0.8);
+        padding: 10px;
+        width: 180px;
+        height: 180px;
+        margin-left: 22%;
+        margin-top: -200px;
+        color: azure;
+        display: block;
+        cursor: pointer;
+        text-align: center;
+        position: absolute;
+    }
+
+    .img-overlay svg {
+        width: 40px;
+        height: 40px;
+        margin-top: 30px;
+    }
+    .img-overlay span {
+        width: 60px;
     }
 </style>

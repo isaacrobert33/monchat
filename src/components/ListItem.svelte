@@ -10,8 +10,11 @@
     export let read_time;
     export let unread_count;
     export let clickCallback;
+    export let type;
+    export let info;
 
     var host = "http://127.0.0.1:8000";
+    console.log(info);
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -25,11 +28,19 @@
         alt={msg_recipient.user_name}
     />
     <div class="chat-info">
-        <p class="title">
-            {direction == "outbound"
-                ? `${msg_recipient.first_name} ${msg_recipient.last_name}`
-                : `${msg_sender.first_name} ${msg_sender.last_name}`}
-        </p>
+        <span>
+            {#if type == "group_info"}
+                <p class="title">
+                    {info}
+                </p>
+            {:else}
+                <p class="title">
+                    {direction == "outbound"
+                        ? `${msg_recipient.first_name} ${msg_recipient.last_name}`
+                        : `${msg_sender.first_name} ${msg_sender.last_name}`}
+                </p>
+        </span>
+        
         {#if direction == "outbound"}
             {#if msg_status === "UD"}
                 <svg
@@ -75,12 +86,14 @@
                 </svg>
             {/if}
         {/if}
+
         <p
             class="msg-body"
             style="margin-left: {direction == 'outbound' ? '20px' : '0px'};"
         >
             {msg_body}
         </p>
+
     </div>
 
     {#if unread_count}

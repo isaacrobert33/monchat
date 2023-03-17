@@ -12,6 +12,7 @@
     export let chat_recipient_data;
     export let chat_profile_status;
     export let conversation_list = [];
+    export let type;
 
     function deleteText(index) {
         console.log("Deleting text...");
@@ -22,6 +23,60 @@
         return `${prefix}_${uuidv4()}`;
     }
 
+    const SingleChatSetup = (msg_input) => {
+        let socket_url = `ws://127.0.0.1:8000/ws/chat/${chat_recipient_data.user_id}/`;
+        var chat_socket = new WebSocket(socket_url);
+
+        const date = new Date();
+        let msg_data = {
+            msg_id: generateID("chat"),
+            recipient_data: {
+                user_id: chat_recipient_data.user_id,
+                user_name: chat_recipient_data.user_name,
+                user_icon: chat_recipient_data.user_icon,
+                first_name: chat_recipient_data.first_name,
+                last_name: chat_recipient_data.last_name,
+            },
+            sender_data: {
+                user_id: user_data.user_id,
+                user_name: user_data.user_name,
+                user_icon: user_data.user_icon,
+                first_name: user_data.first_name,
+                last_name: user_data.last_name,
+            },
+            msg_body: msg_input.value,
+            msg_sender: user_data.user_name,
+            msg_recipient: chat_recipient_data.user_name,
+            msg_status: "UD",
+        };
+
+        chat_socket.onopen = (e) => {
+            msg_data.msg_time = date.toISOString();
+            msg_data.direction = "inbound";
+            chat_socket.send(JSON.stringify(msg_data));
+            chat_socket.close();
+        };
+
+        let temp_msg_data = { ...msg_data };
+        temp_msg_data.msg_time = `${date
+            .getHours()
+            .toString()
+            .padStart(2, "0")}:${date
+            .getMinutes()
+            .toString()
+            .padStart(2, "0")}`;
+
+        temp_msg_data.direction = "outbound";
+
+        if (chat_profile_status == "online") {
+            temp_msg_data.msg_status = "DV";
+        }
+
+        dispatch("newmessagesent", temp_msg_data);
+        conversation_list = [...conversation_list, temp_msg_data];
+        msg_input.value = "";
+    };
+
     onMount(() => {
         let chatlist_node = document.getElementById("chat_con");
         chatlist_node.scrollTop =
@@ -31,56 +86,11 @@
         msg_input.addEventListener("keydown", function (e) {
             if (e.key === "Enter") {
                 if (msg_input.value) {
-                    let socket_url = `ws://127.0.0.1:8000/ws/chat/${chat_recipient_data.user_id}/`;
-                    var chat_socket = new WebSocket(socket_url);
-
-                    const date = new Date();
-                    let msg_data = {
-                        msg_id: generateID("chat"),
-                        recipient_data: {
-                            user_id: chat_recipient_data.user_id,
-                            user_name: chat_recipient_data.user_name,
-                            user_icon: chat_recipient_data.user_icon,
-                            first_name: chat_recipient_data.first_name,
-                            last_name: chat_recipient_data.last_name,
-                        },
-                        sender_data: {
-                            user_id: user_data.user_id,
-                            user_name: user_data.user_name,
-                            user_icon: user_data.user_icon,
-                            first_name: user_data.first_name,
-                            last_name: user_data.last_name,
-                        },
-                        msg_body: msg_input.value,
-                        msg_sender: user_data.user_name,
-                        msg_recipient: chat_recipient_data.user_name,
-                    };
-
-                    chat_socket.onopen = (e) => {
-                        msg_data.msg_time = date.toISOString();
-                        msg_data.direction = "inbound";
-                        chat_socket.send(JSON.stringify(msg_data));
-                        chat_socket.close();
-                    };
-
-                    let temp_msg_data = { ...msg_data };
-                    temp_msg_data.msg_time = `${date
-                        .getHours()
-                        .toString()
-                        .padStart(2, "0")}:${date
-                        .getMinutes()
-                        .toString()
-                        .padStart(2, "0")}`;
-
-                    temp_msg_data.direction = "outbound";
-
-                    if (chat_profile_status == "online") {
-                        temp_msg_data.msg_status = "DV";
+                    if (type == "single_chat") {
+                        SingleChatSetup(msg_input);
+                    } else {
+                        //
                     }
-                    console.log("New message here");
-                    dispatch("newmessagesent", temp_msg_data);
-                    conversation_list = [...conversation_list, temp_msg_data];
-                    msg_input.value = "";
                 }
             }
         });

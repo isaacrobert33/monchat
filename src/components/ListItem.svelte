@@ -110,7 +110,7 @@
 {:else}
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div
-    id={`sidebar-${group_id}`}
+    id={`sidebar-${group_data.group_id}`}
     class="list-item"
     on:click={clickCallback}
     data-read-time={group_data.read_by}

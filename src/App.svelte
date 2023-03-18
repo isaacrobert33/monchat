@@ -12,6 +12,7 @@
 
   let user_id = window.localStorage.getItem("monchat_user_id");
   let user_data = {};
+  let groups = [];
   let chat_list = [];
   let currentChatStatus = false;
 
@@ -69,7 +70,7 @@
     online_socket.onmessage = function (e) {
       let data = JSON.parse(e.data);
 
-      if (openedChatData.user_name) {
+      if (openedChatData && openedChatData.user_name) {
         if (data.user_name == openedChatData.user_name) {
           if (data.online_status == true) {
             currentChatStatus = "online";
@@ -98,6 +99,7 @@
       })
       .then((response) => {
         user_data = response.data.data;
+        groups = response.data.groups;
         initialize_socket();
       })
       .catch((err) => {
@@ -151,7 +153,9 @@
   const fetchChats = async (openedChatData) => {
     await axios
       .get(
-        `${host}/chats/${user_data.user_name}/${openedChatData.user_name}/`,
+        chatType == "single_chat"
+          ? `${host}/chats/${user_data.user_name}/${openedChatData.user_name}/`
+          : `${host}/group_chats/${openedChatData.group_id}/${user_data.user_name}/`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -212,30 +216,36 @@
   };
 
   let conversations = [];
-  let openedChatData = {};
+  let openedChatData = null;
   var chatType;
   var activeChat;
 
   const openChat = async (event) => {
+    chatType = event.detail.type;
+    console.log(event.detail);
     // setting colors for active chats
     if (activeChat) {
       console.log(activeChat);
       document.getElementById(activeChat).style.backgroundColor = "#111b21";
     }
-    document.getElementById(
-      `sidebar-${event.detail.msg_id}`
-    ).style.backgroundColor = "#2a3942";
-    activeChat = `sidebar-${event.detail.msg_id}`;
+    activeChat = `sidebar-${
+      chatType == "single_chat"
+        ? event.detail.msg_id
+        : event.detail.group_data.group_id
+    }`;
+
+    document.getElementById(activeChat).style.backgroundColor = "#2a3942";
 
     let recipient =
       event.detail.direction == "outbound"
         ? event.detail.msg_recipient
         : event.detail.msg_sender;
 
-    chatType = event.detail.type;
-
     if (chatType == "single_chat") {
       fetchRecipientData(recipient);
+    } else {
+      openedChatData = event.detail.group_data;
+      fetchChats(openedChatData);
     }
   };
 
@@ -466,7 +476,7 @@
       on:newchat={handleNewChat}
     />
   {/if}
-  {#if openedChatData.user_id}
+  {#if openedChatData}
     <ChatContainer
       bind:chat_recipient_data={openedChatData}
       type={chatType}

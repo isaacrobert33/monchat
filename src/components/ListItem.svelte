@@ -175,7 +175,7 @@
         style="margin-left: {direction == 'outbound' ? '20px' : '0px'};"
       >
         {#if type == "group_chat"}
-          {group_data.msg_body}
+          {`${msg_sender.user_name}: ${msg_body}`}
         {:else}
           <i>{group_data.info}</i>
         {/if}

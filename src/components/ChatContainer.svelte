@@ -1,5 +1,6 @@
 <script>
   import { onMount } from "svelte";
+  import { format } from "timeago.js";
   import ChatCard from "./ChatCard.svelte";
   import { createEventDispatcher } from "svelte";
   import { v4 as uuidv4 } from "uuid";
@@ -30,7 +31,7 @@
     return `${prefix}_${uuidv4()}`;
   }
 
-  const SingleChatSetup = (msg_input) => {
+  const singleChatSetup = (msg_input) => {
     let socket_url = `ws://127.0.0.1:8000/ws/chat/${chat_recipient_data.user_id}/`;
     var chat_socket = new WebSocket(socket_url);
 
@@ -59,6 +60,7 @@
 
     chat_socket.onopen = (e) => {
       msg_data.msg_time = date.toISOString();
+      msg_data.msg_timeago = format(date.toISOString());
       msg_data.direction = "inbound";
       chat_socket.send(JSON.stringify(msg_data));
       chat_socket.close();
@@ -81,6 +83,50 @@
     msg_input.value = "";
   };
 
+  const groupChatSetup = (msg_input) => {
+    console.log("recp", chat_recipient_data);
+    let socket_url = `ws://127.0.0.1:8000/ws/group/${chat_recipient_data.group_id}/`;
+    var chat_socket = new WebSocket(socket_url);
+    const date = new Date();
+
+    let msg_data = {
+      msg_id: generateID("chat"),
+      group_data: chat_recipient_data,
+      sender_data: {
+        user_id: user_data.user_id,
+        user_name: user_data.user_name,
+        user_icon: user_data.user_icon,
+        first_name: user_data.first_name,
+        last_name: user_data.last_name,
+      },
+      msg_body: msg_input.value,
+      msg_sender: user_data.user_name,
+      group_id: chat_recipient_data.group_id,
+      msg_status: "UD",
+    };
+
+    chat_socket.onopen = (e) => {
+      msg_data.msg_time = date.toISOString();
+      msg_data.msg_timeago = format(date.toISOString());
+      msg_data.direction = "inbound";
+      console.log("Sending", msg_data);
+      chat_socket.send(JSON.stringify(msg_data));
+      chat_socket.close();
+    };
+
+    let temp_msg_data = { ...msg_data };
+    temp_msg_data.msg_time = `${date
+      .getHours()
+      .toString()
+      .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+
+    temp_msg_data.direction = "outbound";
+
+    dispatch("newmessagesent", temp_msg_data);
+    conversation_list = [...conversation_list, temp_msg_data];
+    msg_input.value = "";
+  };
+
   onMount(() => {
     let chatlist_node = document.getElementById("chat_con");
     chatlist_node.scrollTop = document.getElementById("conv_list").scrollHeight;
@@ -90,9 +136,9 @@
       if (e.key === "Enter") {
         if (msg_input.value) {
           if (type == "single_chat") {
-            SingleChatSetup(msg_input);
+            singleChatSetup(msg_input);
           } else {
-            //
+            groupChatSetup(msg_input);
           }
         }
       }

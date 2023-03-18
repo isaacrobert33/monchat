@@ -90,6 +90,33 @@
     };
   };
 
+  var groupSockets = {};
+
+  const InitializeGroupsSocket = () => {
+    let i;
+    for (i = 0; i < groups.length; i++) {
+      let socket_url = `ws://127.0.0.1:8000/ws/group/${groups[i]}`;
+      let group_socket = new WebSocket(socket_url);
+
+      group_socket.onopen = (e) => {
+        console.log("GROUP SOCKET OPENED FOR ", groups[i]);
+      };
+
+      group_socket.onclose = (e) => {
+        console.log("GROUP CLOSED FOR ", groups[i]);
+      };
+
+      group_socket.onmessage = (event) => {
+        let data = JSON.parse(event.data);
+        event = { detail: data };
+        console.log("Incoming", event);
+        handleNewMsg(event, "inbound");
+      };
+
+      groupSockets[groups[i]] = group_socket;
+    }
+  };
+
   const fetchCL = async () => {
     await axios
       .get(`${host}/user/${user_id}/`, {
@@ -185,7 +212,7 @@
         last_msg_socket.onopen = (e) => {
           let dt = new Date();
           console.log("sent read receipt");
-          handleMsgRead(last_msg);
+          handleMsgRead(last_msg, last_msg.direction, chatType);
 
           last_msg_socket.send(
             JSON.stringify({
@@ -251,7 +278,7 @@
 
   const updateSideBarChats = (new_chat) => {
     let updated = false;
-
+    console.log("new_chat", new_chat);
     chat_list.forEach((chat) => {
       if (chat.type == "single_chat") {
         if (
@@ -296,30 +323,77 @@
           temp_chat_list.unshift(updated_data);
           chat_list = temp_chat_list;
         }
+      } else {
+        if (chat.group_data.group_id == new_chat.group_data.group_id) {
+          let index = chat_list.indexOf(chat);
+          let actualChat = chat_list[index];
+          let temp_chat_list = chat_list;
+
+          let date = new Date(new_chat.msg_time);
+          let fTime =
+            new_chat.direction == "outbound"
+              ? new_chat.msg_time
+              : `${date.getHours().toString().padStart(2, "0")}:${date
+                  .getMinutes()
+                  .toString()
+                  .padStart(2, "0")}`;
+
+          console.log("actual", actualChat);
+
+          let updated_data = { ...actualChat };
+          updated_data.msg_time = fTime;
+          updated_data.direction = new_chat.direction;
+          updated_data.type = "group_chat";
+          updated_data.msg_timeago = format(new_chat.msg_time);
+          updated_data.msg_status = new_chat.msg_status;
+          updated_data.msg_body = new_chat.msg_body;
+          updated_data.msg_sender = new_chat.sender_data;
+          updated_data.unread_count =
+            new_chat.direction == "inbound"
+              ? actualChat.unread_count + 1
+              : actualChat.unread_count;
+
+          updated = true;
+          console.log("Updt", updated_data);
+          updated = true;
+          temp_chat_list.splice(index, 1);
+          temp_chat_list.unshift(updated_data);
+          chat_list = temp_chat_list;
+        }
       }
     });
 
     if (!updated) {
-      console.log("new_chat", new_chat);
+      let fTime = format(new_chat.msg_time);
+      const chat_data =
+        new_chat.type == "single_chat"
+          ? {
+              msg_recipient: new_chat.recipient_data,
+              msg_sender:
+                user_data.user_name == new_chat.msg_sender
+                  ? user_data
+                  : new_chat.sender_data,
+              msg_body: new_chat.msg_body,
+              msg_time:
+                new_chat.direction == "inbound" ? fTime : new_chat.msg_time,
+              direction: new_chat.direction,
+              unread_count: new_chat.direction == "inbound" ? 1 : 0,
+              type: new_chat.type,
+            }
+          : {
+              group_data: new_chat.group_data,
+              msg_sender:
+                user_data.user_name == new_chat.msg_sender
+                  ? user_data
+                  : new_chat.sender_data,
+              msg_body: new_chat.msg_body,
+              msg_time:
+                new_chat.direction == "inbound" ? fTime : new_chat.msg_time,
+              direction: new_chat.direction,
+              unread_count: new_chat.direction == "inbound" ? 1 : 0,
+              type: new_chat.type,
+            };
 
-      let date = new Date(new_chat.msg_time);
-
-      let fTime = `${date.getHours().toString().padStart(2, "0")}:${date
-        .getMinutes()
-        .toString()
-        .padStart(2, "0")}`;
-      const chat_data = {
-        msg_recipient: new_chat.recipient_data,
-        msg_sender:
-          user_data.user_name == new_chat.msg_sender
-            ? user_data
-            : new_chat.sender_data,
-        msg_body: new_chat.msg_body,
-        msg_time: new_chat.direction == "inbound" ? fTime : new_chat.msg_time,
-        direction: new_chat.direction,
-        unread_count: new_chat.direction == "inbound" ? 1 : 0,
-      };
-      console.log("chat_data", chat_data);
       let tcl = chat_list;
       tcl.unshift(chat_data);
 
@@ -365,23 +439,50 @@
           document.getElementById("conv_list").scrollHeight;
       }
 
-      const sendReadReceipt = () => {
+      const sendReadReceipt = (type = "single_chat") => {
         let dt = new Date();
 
-        console.log("sent read receipt");
-        handleMsgRead(conv_data, direction);
-        msg_socket.send(
-          JSON.stringify({
-            msg_id: conv_data.msg_id,
-            msg_status: "RD",
-            read_time: dt.toISOString(),
-          })
-        );
-        document.removeEventListener("mousemove", sendReadReceipt);
+        if (type == "single_chat") {
+          console.log("sent read receipt");
+          handleMsgRead(conv_data, direction);
+          msg_socket.send(
+            JSON.stringify({
+              msg_id: conv_data.msg_id,
+              msg_status: "RD",
+              read_time: dt.toISOString(),
+            })
+          );
+          document.removeEventListener("mousemove", sendReadReceipt);
+        } else {
+          console.log("sent read receipt");
+          handleMsgRead(conv_data, direction, "group");
+          msg_socket.send(
+            JSON.stringify({
+              msg_id: conv_data.msg_id,
+              msg_status: "RD",
+              read_time: dt.toISOString(),
+              read_by: user_data.user_name,
+            })
+          );
+          document.removeEventListener("mousemove", (e) => {
+            sendReadReceipt("group");
+          });
+        }
       };
-      console.log("op", openedChatData);
-      if (openedChatData && openedChatData.user_name == conv_data.msg_sender) {
-        document.addEventListener("mousemove", sendReadReceipt);
+
+      if (openedChatData) {
+        if (
+          chatType == "single_chat" &&
+          openedChatData.user_name == conv_data.msg_sender
+        ) {
+          document.addEventListener("mousemove", sendReadReceipt);
+        } else if (
+          openedChatData.group_data.group_id == conv_data.group_data.group_id
+        ) {
+          document.addEventListener("mousemove", (e) => {
+            sendReadReceipt("group");
+          });
+        }
       }
     } else {
       console.log("Listening for read receipt");
@@ -393,7 +494,7 @@
     }
   };
 
-  const handleMsgRead = (event, direction) => {
+  const handleMsgRead = (event, direction, type = "single_chat") => {
     if (direction == "outbound") {
       let chat_index = conversations.length - 1;
 
@@ -406,29 +507,46 @@
 
       let temp = conversations;
       for (let j = 0; j < temp.length; j++) {
-        temp[j].msg_status = "RD";
-        if (j == chat_index) {
-          break;
+        if (type == "single_chat") {
+          temp[j].msg_status = "RD";
+          if (j == chat_index) {
+            break;
+          }
+        } else {
+          temp[j].read_by = [...temp[j].read_by, user_data.user_name];
         }
       }
 
       conversations = temp;
     } else {
       chat_list.forEach((chat) => {
-        if (
-          (chat.msg_recipient.user_name == event.msg_sender &&
-            chat.msg_sender.user_name == event.msg_recipient) ||
-          (chat.msg_recipient.user_name === event.msg_recipient &&
-            chat.msg_sender.user_name === event.msg_sender)
-        ) {
-          let index = chat_list.indexOf(chat);
-          let c = chat_list[index];
-          let updated = {
-            ...c,
-            unread_count: 0,
-          };
+        if (chat.type == "single_chat") {
+          if (
+            (chat.msg_recipient.user_name == event.msg_sender &&
+              chat.msg_sender.user_name == event.msg_recipient) ||
+            (chat.msg_recipient.user_name === event.msg_recipient &&
+              chat.msg_sender.user_name === event.msg_sender)
+          ) {
+            let index = chat_list.indexOf(chat);
+            let c = chat_list[index];
+            let updated = {
+              ...c,
+              unread_count: 0,
+            };
 
-          chat_list[index] = updated;
+            chat_list[index] = updated;
+          }
+        } else {
+          if (chat.group_data.group_id == event.group_data.group_id) {
+            let index = chat_list.indexOf(chat);
+            let c = chat_list[index];
+            let updated = {
+              ...c,
+              unread_count: 0,
+            };
+
+            chat_list[index] = updated;
+          }
         }
       });
     }

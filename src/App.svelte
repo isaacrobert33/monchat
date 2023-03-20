@@ -433,6 +433,9 @@
         .padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
       conv_data.direction = "inbound";
 
+      conv_data.msg_sender = conv_data.sender_data;
+
+      console.log(conv_data);
       conversations = [...conversations, conv_data];
 
       let chatlist_node = document.getElementById("chat_con");
@@ -510,6 +513,7 @@
 
       let temp = conversations;
       for (let j = 0; j < temp.length; j++) {
+        console.log(temp[j]);
         if (temp[j].type == "single_chat") {
           temp[j].msg_status = "RD";
           if (j == chat_index) {

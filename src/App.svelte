@@ -11,10 +11,38 @@
   const host = "http://127.0.0.1:8000/monchat";
 
   let user_id = window.localStorage.getItem("monchat_user_id");
-  let user_data = {};
-  let groups = [];
-  let chat_list = [];
+  var user_data = {};
+  var groups = [];
+  var chat_list = [];
   let currentChatStatus = false;
+
+  var groupSockets = {};
+  const initializeGroupSocket = (groups) => {
+    for (let i = 0; i < groups.length; i++) {
+      let socket_url = `ws://127.0.0.1:8000/ws/group/${groups[i]}/`;
+      let group_socket = new WebSocket(socket_url);
+
+      group_socket.onopen = (e) => {
+        console.log("GROUP SOCKET OPENED FOR ", groups[i]);
+      };
+
+      group_socket.onclose = (e) => {
+        console.log("GROUP CLOSED FOR ", groups[i]);
+      };
+
+      group_socket.onmessage = (event) => {
+        let data = JSON.parse(event.data);
+        event = { detail: data };
+
+        if (event.detail.msg_sender !== user_data.user_name) {
+          console.log("Incoming", event);
+          handleNewMsg(event, "inbound");
+        }
+      };
+
+      groupSockets[groups[i]] = group_socket;
+    }
+  };
 
   const initialize_socket = () => {
     ////// Initialize self socket
@@ -90,33 +118,6 @@
     };
   };
 
-  var groupSockets = {};
-
-  const InitializeGroupsSocket = () => {
-    let i;
-    for (i = 0; i < groups.length; i++) {
-      let socket_url = `ws://127.0.0.1:8000/ws/group/${groups[i]}`;
-      let group_socket = new WebSocket(socket_url);
-
-      group_socket.onopen = (e) => {
-        console.log("GROUP SOCKET OPENED FOR ", groups[i]);
-      };
-
-      group_socket.onclose = (e) => {
-        console.log("GROUP CLOSED FOR ", groups[i]);
-      };
-
-      group_socket.onmessage = (event) => {
-        let data = JSON.parse(event.data);
-        event = { detail: data };
-        console.log("Incoming", event);
-        handleNewMsg(event, "inbound");
-      };
-
-      groupSockets[groups[i]] = group_socket;
-    }
-  };
-
   const fetchCL = async () => {
     await axios
       .get(`${host}/user/${user_id}/`, {
@@ -126,8 +127,6 @@
       })
       .then((response) => {
         user_data = response.data.data;
-        groups = response.data.groups;
-        initialize_socket();
       })
       .catch((err) => {
         window.localStorage.setItem("monchat_user_id", "");
@@ -142,6 +141,10 @@
       })
       .then((response) => {
         chat_list = response.data.data;
+        groups = response.data.groups;
+
+        initialize_socket();
+        initializeGroupSocket(response.data.groups);
       });
   };
 
@@ -439,11 +442,13 @@
           document.getElementById("conv_list").scrollHeight;
       }
 
-      const sendReadReceipt = (type = "single_chat") => {
-        let dt = new Date();
+      var type;
 
+      const sendReadReceipt = () => {
+        let dt = new Date();
+        console.log(type);
         if (type == "single_chat") {
-          console.log("sent read receipt");
+          console.log("sent single chat read receipt");
           handleMsgRead(conv_data, direction);
           msg_socket.send(
             JSON.stringify({
@@ -454,7 +459,7 @@
           );
           document.removeEventListener("mousemove", sendReadReceipt);
         } else {
-          console.log("sent read receipt");
+          console.log("sent group chat read receipt");
           handleMsgRead(conv_data, direction, "group");
           msg_socket.send(
             JSON.stringify({
@@ -464,9 +469,7 @@
               read_by: user_data.user_name,
             })
           );
-          document.removeEventListener("mousemove", (e) => {
-            sendReadReceipt("group");
-          });
+          document.removeEventListener("mousemove", sendReadReceipt);
         }
       };
 
@@ -475,13 +478,12 @@
           chatType == "single_chat" &&
           openedChatData.user_name == conv_data.msg_sender
         ) {
+          type = "single_chat";
           document.addEventListener("mousemove", sendReadReceipt);
-        } else if (
-          openedChatData.group_data.group_id == conv_data.group_data.group_id
-        ) {
-          document.addEventListener("mousemove", (e) => {
-            sendReadReceipt("group");
-          });
+        } else if (openedChatData.group_id == conv_data.group_data.group_id) {
+          type = "group_chat";
+          console.log("Group read receipt...");
+          document.addEventListener("mousemove", sendReadReceipt);
         }
       }
     } else {
@@ -495,6 +497,7 @@
   };
 
   const handleMsgRead = (event, direction, type = "single_chat") => {
+    console.log(event);
     if (direction == "outbound") {
       let chat_index = conversations.length - 1;
 
@@ -507,7 +510,7 @@
 
       let temp = conversations;
       for (let j = 0; j < temp.length; j++) {
-        if (type == "single_chat") {
+        if (temp[j].type == "single_chat") {
           temp[j].msg_status = "RD";
           if (j == chat_index) {
             break;
@@ -537,7 +540,8 @@
             chat_list[index] = updated;
           }
         } else {
-          if (chat.group_data.group_id == event.group_data.group_id) {
+          console.log("ch", chat);
+          if (chat.group_data.group_id == event.group_id) {
             let index = chat_list.indexOf(chat);
             let c = chat_list[index];
             let updated = {

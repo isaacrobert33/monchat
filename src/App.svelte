@@ -13,7 +13,7 @@
   let user_id = window.localStorage.getItem("monchat_user_id");
   var user_data = {};
   var groups = [];
-  var chat_list = [];
+  var chatList = [];
   let currentChatStatus = false;
 
   var groupSockets = {};
@@ -140,7 +140,7 @@
         },
       })
       .then((response) => {
-        chat_list = response.data.data;
+        chatList = response.data.data;
         groups = response.data.groups;
 
         initialize_socket();
@@ -247,6 +247,7 @@
 
   let conversations = [];
   let openedChatData = null;
+  let activeFailed;
   var chatType;
   var activeChat;
 
@@ -264,7 +265,9 @@
         : event.detail.group_data.group_id
     }`;
 
-    document.getElementById(activeChat).style.backgroundColor = "#2a3942";
+    if (document.getElementById(activeChat)) {
+      document.getElementById(activeChat).style.backgroundColor = "#2a3942";
+    }
 
     let recipient =
       event.detail.direction == "outbound"
@@ -281,8 +284,8 @@
 
   const updateSideBarChats = (new_chat) => {
     let updated = false;
-    console.log("new_chat", new_chat);
-    chat_list.forEach((chat) => {
+
+    chatList.forEach((chat) => {
       if (chat.type == "single_chat") {
         if (
           (chat.msg_recipient.user_name == new_chat.msg_sender &&
@@ -290,9 +293,9 @@
           (chat.msg_recipient.user_name === new_chat.msg_recipient &&
             chat.msg_sender.user_name === new_chat.msg_sender)
         ) {
-          let index = chat_list.indexOf(chat);
-          let actualChat = chat_list[index];
-          let temp_chat_list = chat_list;
+          let index = chatList.indexOf(chat);
+          let actualChat = chatList[index];
+          let temp_chatList = chatList;
 
           let date = new Date(new_chat.msg_time);
           let fTime =
@@ -322,15 +325,15 @@
           };
           console.log("Updt", updated_data);
           updated = true;
-          temp_chat_list.splice(index, 1);
-          temp_chat_list.unshift(updated_data);
-          chat_list = temp_chat_list;
+          temp_chatList.splice(index, 1);
+          temp_chatList.unshift(updated_data);
+          chatList = temp_chatList;
         }
       } else {
         if (chat.group_data.group_id == new_chat.group_data.group_id) {
-          let index = chat_list.indexOf(chat);
-          let actualChat = chat_list[index];
-          let temp_chat_list = chat_list;
+          let index = chatList.indexOf(chat);
+          let actualChat = chatList[index];
+          let temp_chatList = chatList;
 
           let date = new Date(new_chat.msg_time);
           let fTime =
@@ -359,9 +362,9 @@
           updated = true;
           console.log("Updt", updated_data);
           updated = true;
-          temp_chat_list.splice(index, 1);
-          temp_chat_list.unshift(updated_data);
-          chat_list = temp_chat_list;
+          temp_chatList.splice(index, 1);
+          temp_chatList.unshift(updated_data);
+          chatList = temp_chatList;
         }
       }
     });
@@ -397,10 +400,10 @@
               type: new_chat.type,
             };
 
-      let tcl = chat_list;
+      let tcl = chatList;
       tcl.unshift(chat_data);
 
-      chat_list = tcl;
+      chatList = tcl;
     }
   };
 
@@ -526,7 +529,7 @@
 
       conversations = temp;
     } else {
-      chat_list.forEach((chat) => {
+      chatList.forEach((chat) => {
         if (chat.type == "single_chat") {
           if (
             (chat.msg_recipient.user_name == event.msg_sender &&
@@ -534,26 +537,26 @@
             (chat.msg_recipient.user_name === event.msg_recipient &&
               chat.msg_sender.user_name === event.msg_sender)
           ) {
-            let index = chat_list.indexOf(chat);
-            let c = chat_list[index];
+            let index = chatList.indexOf(chat);
+            let c = chatList[index];
             let updated = {
               ...c,
               unread_count: 0,
             };
 
-            chat_list[index] = updated;
+            chatList[index] = updated;
           }
         } else {
           console.log("ch", chat);
           if (chat.group_data.group_id == event.group_id) {
-            let index = chat_list.indexOf(chat);
-            let c = chat_list[index];
+            let index = chatList.indexOf(chat);
+            let c = chatList[index];
             let updated = {
               ...c,
               unread_count: 0,
             };
 
-            chat_list[index] = updated;
+            chatList[index] = updated;
           }
         }
       });
@@ -588,6 +591,17 @@
         conversations = response.data.data;
       });
   };
+
+  const handleNewGroup = (event) => {
+    let groupData = event.detail;
+    let newChatList = chatList;
+    chatList = newChatList;
+    newChatList.unshift(groupData);
+    openChat(event);
+
+    // openedChatData = groupData;
+    // conversations = [];
+  };
 </script>
 
 <div class="App {name}">
@@ -596,10 +610,11 @@
   {/if}
   {#if user_data.user_name}
     <ListContainer
-      bind:chat_list
+      bind:chatList
       {user_data}
       on:chatclick={openChat}
       on:newchat={handleNewChat}
+      on:newgroup={handleNewGroup}
     />
   {/if}
   {#if openedChatData}

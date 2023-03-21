@@ -191,24 +191,60 @@
 
 <div class="chats-container" id="chat_con">
   <div class="right-topbar">
-    <img
-      class="chat-profile-img"
-      src={`${host}/media/${
-        type == "single_chat"
-          ? chat_recipient_data.user_icon
-          : chat_recipient_data.group_icon
-      }/`}
-      alt={"profile"}
-    />
+    {#if type !== "single_chat" && !chat_recipient_data.group_icon}
+      <svg
+        class="chat-profile-img"
+        fill="#f0ffff"
+        viewBox="0 0 1920 1920"
+        xmlns="http://www.w3.org/2000/svg"
+        ><g id="SVGRepo_bgCarrier" stroke-width="0" /><g
+          id="SVGRepo_tracerCarrier"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        /><g id="SVGRepo_iconCarrier">
+          <path
+            d="M735.385 336.094c218.24 0 395.977 177.624 395.977 395.976v113.137c0 121.96-56.568 229.78-143.57 302.526 94.13 13.916 187.354 34.959 278.315 64.6 122.414 39.825 204.664 155.676 204.664 288.159v200.364l-26.814 16.63c-148.434 92.32-392.017 202.515-708.572 202.515-174.795 0-439.76-35.186-708.685-202.514L0 1700.856v-189.39c0-140.629 89.264-263.042 221.973-304.79 85.418-26.7 172.533-46.498 260.327-59.509-86.55-72.746-142.891-180.339-142.891-301.96V732.07c0-218.352 177.623-395.976 395.976-395.976ZM1183.405 0c218.24 0 395.976 177.624 395.976 395.977v113.136c0 121.96-56.568 229.893-143.57 302.526 94.13 13.916 187.241 35.072 278.316 64.6 122.413 40.051 204.663 155.79 204.663 288.272v200.364l-26.7 16.631c-77.612 48.31-181.81 101.03-308.183 140.742v-21.723c0-181.696-113.589-340.766-282.727-395.75a1720.133 1720.133 0 0 0-111.553-32.244c35.751-69.805 54.871-147.416 54.871-227.29V732.104c0-250.483-182.036-457.975-420.414-500.175C886.762 95.487 1023.656 0 1183.404 0Z"
+            fill-rule="evenodd"
+          />
+        </g></svg
+      >
+    {:else if type == "single_chat" && !chat_recipient_data.user_icon}
+      <svg
+        class="chat-profile-img"
+        fill="#f0ffff"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+        ><g id="SVGRepo_bgCarrier" stroke-width="0" /><g
+          id="SVGRepo_tracerCarrier"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        /><g id="SVGRepo_iconCarrier"
+          ><path
+            d="M12,1A11,11,0,1,0,23,12,11.013,11.013,0,0,0,12,1Zm0,20a9.641,9.641,0,0,1-5.209-1.674,7,7,0,0,1,10.418,0A9.167,9.167,0,0,1,12,21Zm6.694-3.006a8.98,8.98,0,0,0-13.388,0,9,9,0,1,1,13.388,0ZM12,6a4,4,0,1,0,4,4A4,4,0,0,0,12,6Zm0,6a2,2,0,1,1,2-2A2,2,0,0,1,12,12Z"
+          /></g
+        ></svg
+      >
+    {:else}
+      <img
+        class="chat-profile-img"
+        src={`${host}/media/${
+          type == "single_chat"
+            ? chat_recipient_data.user_icon
+            : chat_recipient_data.group_icon
+        }/`}
+        alt={"profile"}
+      />
+    {/if}
+
     <div class="chat-profile-info">
       <p class="chat-profile-name">
         {type == "single_chat"
           ? `${chat_recipient_data.first_name} ${chat_recipient_data.last_name}`
           : chat_recipient_data.name}
       </p>
-      <p class="chat-profile-status">
+      <span class="chat-profile-status">
         {type == "single_chat" ? chat_profile_status : group_members}
-      </p>
+      </span>
     </div>
     <div class="chat-widget">
       <span>
@@ -363,7 +399,7 @@
 
   .chat-profile-info {
     color: azure;
-    width: 15%;
+    width: 55%;
     margin: 5px 10px;
     position: absolute;
     display: inline-block;
@@ -377,6 +413,8 @@
     margin: 2px;
     color: rgba(240, 255, 255, 0.5);
     font-size: 13px;
+    width: 85%;
+    display: inline-block;
   }
 
   .footer {

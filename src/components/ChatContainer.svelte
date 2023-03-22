@@ -187,6 +187,27 @@
       };
     }
   });
+
+  var mediaRecorder;
+  const audioChunks = [];
+
+  const sendVoiceNote = (e) => {
+    if (mediaRecorder) {
+      mediaRecorder.addEventListener("stop", function () {});
+    }
+  };
+
+  const initializeMic = (e) => {
+    window.navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.addEventListener("dataavailable", function (event) {
+          audioChunks.push(event.data);
+        });
+      });
+  };
 </script>
 
 <div class="chats-container" id="chat_con">

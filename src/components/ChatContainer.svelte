@@ -324,7 +324,7 @@
       id="msg_input"
       placeholder="Enter a message..."
     />
-    <span>
+    <span class="mic-btn">
       <svg
         viewBox="0 0 24 24"
         height="24"

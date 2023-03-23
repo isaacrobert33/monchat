@@ -4,6 +4,7 @@
   import ChatCard from "./ChatCard.svelte";
   import { createEventDispatcher } from "svelte";
   import { v4 as uuidv4 } from "uuid";
+  import axios from "axios";
 
   var host = "http://127.0.0.1:8000";
   const dispatch = createEventDispatcher();
@@ -191,9 +192,29 @@
   var mediaRecorder;
   const audioChunks = [];
 
-  const sendVoiceNote = (e) => {
+  const sendVoiceNote = (sender_name, recipient_name) => {
     if (mediaRecorder) {
-      mediaRecorder.addEventListener("stop", function () {});
+      stopRecording();
+
+      const voiceBlob = new Blob(audioChunks, { type: "audio/wav" });
+
+      const formData = new FormData();
+      formData.append("voice", voiceBlob, `${generateID("voice_note")}.wav`);
+      axios
+        .post(
+          `${host}/monchat/voice_notes/${sender_name}/${recipient_name}/`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        )
+        .then((response) => {
+          //
+        });
+    } else {
+      alert("No mic records found");
     }
   };
 
@@ -207,6 +228,22 @@
           audioChunks.push(event.data);
         });
       });
+  };
+
+  const startRecording = (e) => {
+    if (mediaRecorder) {
+      mediaRecorder.start();
+    } else {
+      alert("Error intializing mic");
+    }
+  };
+
+  const stopRecording = (e) => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+    } else {
+      alert("Error intializing mic");
+    }
   };
 </script>
 

@@ -595,12 +595,9 @@
   const handleNewGroup = (event) => {
     let groupData = event.detail;
     let newChatList = chatList;
-    chatList = newChatList;
     newChatList.unshift(groupData);
+    chatList = newChatList;
     openChat(event);
-
-    // openedChatData = groupData;
-    // conversations = [];
   };
 </script>
 

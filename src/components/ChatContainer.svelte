@@ -218,6 +218,21 @@
     }
   };
 
+  var micState = false;
+  const toggleMic = (e) => {
+    if (micState) {
+      stopRecording();
+      micState = false;
+    } else {
+      if (mediaRecorder) {
+        startRecording();
+      } else {
+        initializeMic();
+      }
+      micState = true;
+    }
+  };
+
   const initializeMic = (e) => {
     window.navigator.mediaDevices
       .getUserMedia({ audio: true })
@@ -227,12 +242,15 @@
         mediaRecorder.addEventListener("dataavailable", function (event) {
           audioChunks.push(event.data);
         });
+
+        startRecording();
       });
   };
 
   const startRecording = (e) => {
     if (mediaRecorder) {
       mediaRecorder.start();
+      console.log("Started recording...");
     } else {
       alert("Error intializing mic");
     }
@@ -241,6 +259,7 @@
   const stopRecording = (e) => {
     if (mediaRecorder) {
       mediaRecorder.stop();
+      console.log("Stoped recording...", audioChunks);
     } else {
       alert("Error intializing mic");
     }
@@ -382,7 +401,8 @@
       id="msg_input"
       placeholder="Enter a message..."
     />
-    <span class="mic-btn">
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <span class="mic-btn" on:click={toggleMic}>
       <svg
         viewBox="0 0 24 24"
         height="24"

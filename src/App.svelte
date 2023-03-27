@@ -284,7 +284,7 @@
 
   const updateSideBarChats = (new_chat) => {
     let updated = false;
-
+    console.log(new_chat);
     chatList.forEach((chat) => {
       if (chat.type == "single_chat") {
         if (
@@ -330,7 +330,7 @@
           chatList = temp_chatList;
         }
       } else {
-        if (chat.group_data.group_id == new_chat.group_data.group_id) {
+        if (chat.group_id == new_chat.group_id) {
           let index = chatList.indexOf(chat);
           let actualChat = chatList[index];
           let temp_chatList = chatList;

@@ -264,6 +264,35 @@
       alert("Error intializing mic");
     }
   };
+
+  var typing;
+  var typing_socket;
+  let typing_socket_url = `${host}/ws/typing/`;
+  $: if (typing) {
+    typing_socket = new WebSocket(typing_socket_url);
+
+    typing_socket.onopen = (e) => {
+      let data = JSON.stringify({
+        typing: true,
+        user_name: user_data.user_name,
+      });
+      typing_socket.send(data);
+      typing_socket.close();
+    };
+  } else {
+    if (typing_socket) {
+      typing_socket = new WebSocket(typing_socket_url);
+
+      typing_socket.onopen = (e) => {
+        typing_socket.send(
+          JSON.stringify({
+            typing: false,
+            user_name: user_data.user_name,
+          })
+        );
+      };
+    }
+  }
 </script>
 
 <div class="chats-container" id="chat_con">
@@ -400,6 +429,7 @@
       class="msg-input"
       id="msg_input"
       placeholder="Enter a message..."
+      on:value={typing}
     />
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <span class="mic-btn" on:click={toggleMic}>

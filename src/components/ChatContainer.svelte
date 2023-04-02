@@ -265,33 +265,45 @@
     }
   };
 
-  var typing;
+  var typing,
+    typingState = false;
   var typing_socket;
   let typing_socket_url = `${host}/ws/typing/`;
+  let timerID;
+
   $: if (typing) {
+    console.log("Typed");
     typing_socket = new WebSocket(typing_socket_url);
 
-    typing_socket.onopen = (e) => {
-      let data = JSON.stringify({
-        typing: true,
-        user_name: user_data.user_name,
-      });
-      typing_socket.send(data);
-      typing_socket.close();
-    };
-  } else {
-    if (typing_socket) {
-      typing_socket = new WebSocket(typing_socket_url);
+    if (timerID) {
+      clearTimeout(timerID);
+    }
 
-      typing_socket.onopen = (e) => {
+    typing_socket.onopen = function (e) {
+      if (!typingState) {
+        typingState = true;
+        console.log("Typing:", typingState);
+        typing_socket.onopen = (e) => {
+          let data = JSON.stringify({
+            typing: typingState,
+            user_name: user_data.user_name,
+          });
+          typing_socket.send(data);
+          typing_socket.close();
+        };
+      }
+
+      timerID = setTimeout(function (e) {
+        typingState = false;
+        console.log("Typing:", typingState);
         typing_socket.send(
           JSON.stringify({
-            typing: false,
+            typing: typingState,
             user_name: user_data.user_name,
           })
         );
-      };
-    }
+      }, 2000);
+    };
   }
 </script>
 
@@ -429,7 +441,7 @@
       class="msg-input"
       id="msg_input"
       placeholder="Enter a message..."
-      on:value={typing}
+      bind:value={typing}
     />
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <span class="mic-btn" on:click={toggleMic}>

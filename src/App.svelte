@@ -116,6 +116,35 @@
         }
       }
     };
+
+    let typing_url = `ws://127.0.0.1:8000/ws/typing/`;
+    let typing_socket = new WebSocket(typing_url);
+
+    typing_socket.onclose = function (e) {
+      console.log("DISCONNECTED FROM TYPING CONSUMER");
+    };
+
+    typing_socket.onopen = function (e) {
+      console.log("CONNECTED TO TYPING CONSUMER");
+    };
+
+    typing_socket.onmessage = function (e) {
+      let data = JSON.parse(e.data);
+      setTyping(data);
+    };
+  };
+
+  const setTyping = (event) => {
+    let i;
+    let tempChatList = chatList;
+
+    for (i = 0; i < tempChatList.length; i++) {
+      if (event.user_name === tempChatList[i].user_name) {
+        tempChatList[i].typing = event.typing;
+      }
+    }
+
+    chatList = tempChatList;
   };
 
   const fetchCL = async () => {
@@ -343,8 +372,6 @@
                   .getMinutes()
                   .toString()
                   .padStart(2, "0")}`;
-
-          console.log("actual", actualChat);
 
           let updated_data = { ...actualChat };
           updated_data.msg_time = fTime;

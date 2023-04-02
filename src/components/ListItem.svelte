@@ -17,6 +17,7 @@
   export let group_id = "";
   export let read_by = "";
   export let type = "single_chat";
+  export let typing = false;
 
   var host = "http://127.0.0.1:8000";
 </script>
@@ -92,7 +93,11 @@
         class="msg-body"
         style="margin-left: {direction == 'outbound' ? '20px' : '0px'};"
       >
-        {msg_body}
+        {#if typing}
+          <i class="typing">typing...</i>
+        {:else}
+          <span>{msg_body}</span>
+        {/if}
       </p>
     </div>
 
@@ -295,5 +300,10 @@
 
   .read {
     color: #52bbe8;
+  }
+
+  .msg_body .typing {
+    color: #00a884;
+    font-weight: bold;
   }
 </style>

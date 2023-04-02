@@ -44,6 +44,8 @@
     }
   };
 
+  let typing_socket;
+
   const initialize_socket = () => {
     ////// Initialize self socket
     let socket_url = `ws://127.0.0.1:8000/ws/chat/${user_data.user_id}/`;
@@ -118,7 +120,7 @@
     };
 
     let typing_url = `ws://127.0.0.1:8000/ws/typing/`;
-    let typing_socket = new WebSocket(typing_url);
+    typing_socket = new WebSocket(typing_url);
 
     typing_socket.onclose = function (e) {
       console.log("DISCONNECTED FROM TYPING CONSUMER");
@@ -145,6 +147,12 @@
     }
 
     chatList = tempChatList;
+  };
+
+  const sendTyping = (event) => {
+    if (typing_socket) {
+      typing_socket.send(event.detail);
+    }
   };
 
   const fetchCL = async () => {
@@ -650,6 +658,7 @@
       chat_profile_status={currentChatStatus}
       on:newmessagesent={handleNewMsg}
       on:messageread={handleMsgRead}
+      on:typing={sendTyping}
     />
   {/if}
 </div>

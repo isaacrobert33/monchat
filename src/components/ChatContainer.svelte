@@ -265,45 +265,35 @@
     }
   };
 
-  var typing,
-    typingState = false;
-  var typing_socket;
-  let typing_socket_url = `${host}/ws/typing/`;
+  var typing;
+  var typingState = false;
   let timerID;
 
   $: if (typing) {
-    console.log("Typed");
-    typing_socket = new WebSocket(typing_socket_url);
-
     if (timerID) {
       clearTimeout(timerID);
     }
 
-    typing_socket.onopen = function (e) {
-      if (!typingState) {
-        typingState = true;
-        console.log("Typing:", typingState);
-        typing_socket.onopen = (e) => {
-          let data = JSON.stringify({
-            typing: typingState,
-            user_name: user_data.user_name,
-          });
-          typing_socket.send(data);
-          typing_socket.close();
-        };
-      }
+    if (!typingState) {
+      typingState = true;
+      console.log("Typing:", typingState);
 
+      let data = JSON.stringify({
+        typing: typingState,
+        user_name: user_data.user_name,
+      });
+      dispatch("typing", data);
+      console.log("setting time out");
       timerID = setTimeout(function (e) {
         typingState = false;
         console.log("Typing:", typingState);
-        typing_socket.send(
-          JSON.stringify({
-            typing: typingState,
-            user_name: user_data.user_name,
-          })
-        );
+        let data = JSON.stringify({
+          typing: typingState,
+          user_name: user_data.user_name,
+        });
+        dispatch("typing", data);
       }, 2000);
-    };
+    }
   }
 </script>
 

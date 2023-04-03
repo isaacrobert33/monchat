@@ -141,8 +141,14 @@
     let tempChatList = chatList;
 
     for (i = 0; i < tempChatList.length; i++) {
-      if (event.user_name === tempChatList[i].user_name) {
+      let recipient =
+        tempChatList[i].direction == "outbound"
+          ? tempChatList[i].msg_recipient
+          : tempChatList[i].msg_sender;
+
+      if (event.user_name === recipient.user_name) {
         tempChatList[i].typing = event.typing;
+        console.log(tempChatList[i]);
       }
     }
 

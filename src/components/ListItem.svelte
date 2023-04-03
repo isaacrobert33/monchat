@@ -302,7 +302,7 @@
     color: #52bbe8;
   }
 
-  .msg_body .typing {
+  .msg-body .typing {
     color: #00a884;
     font-weight: bold;
   }

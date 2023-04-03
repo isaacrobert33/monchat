@@ -265,14 +265,15 @@
     }
   };
 
-  var typing;
+  var typing, lastVal;
   var typingState = false;
   let timerID;
 
-  $: if (typing) {
+  $: if (typing && typing !== lastVal) {
     if (timerID) {
       clearTimeout(timerID);
     }
+    lastVal = typing;
 
     if (!typingState) {
       typingState = true;
@@ -282,9 +283,12 @@
         typing: typingState,
         user_name: user_data.user_name,
       });
+
       dispatch("typing", data);
+
       console.log("setting time out");
-      timerID = setTimeout(function (e) {
+
+      setTimeout(function (e) {
         typingState = false;
         console.log("Typing:", typingState);
         let data = JSON.stringify({
@@ -292,7 +296,7 @@
           user_name: user_data.user_name,
         });
         dispatch("typing", data);
-      }, 2000);
+      }, 5000);
     }
   }
 </script>

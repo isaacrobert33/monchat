@@ -35,7 +35,6 @@
         event = { detail: data };
 
         if (event.detail.msg_sender !== user_data.user_name) {
-          console.log("Incoming", event);
           handleNewMsg(event, "inbound");
         }
       };
@@ -62,7 +61,6 @@
     chat_socket.onmessage = (event) => {
       let data = JSON.parse(event.data);
       event = { detail: data };
-      console.log("Incoming", event);
       handleNewMsg(event, "inbound");
     };
 
@@ -148,7 +146,6 @@
 
       if (event.user_name === recipient.user_name) {
         tempChatList[i].typing = event.typing;
-        console.log(tempChatList[i]);
       }
     }
 
@@ -257,7 +254,7 @@
       if (last_msg.msg_status == "UD" || last_msg.msg_status == "DV") {
         last_msg_socket.onopen = (e) => {
           let dt = new Date();
-          console.log("sent read receipt");
+
           handleMsgRead(last_msg, last_msg.direction, chatType);
 
           last_msg_socket.send(
@@ -278,9 +275,7 @@
       if (last_msg.msg_status == "RD") {
         last_msg_socket.close();
       } else {
-        console.log("Waiting for msg read");
         last_msg_socket.onmessage = (event) => {
-          console.log("Message read!");
           let data = JSON.parse(event.data);
           handleMsgRead(data, last_msg.direction);
         };
@@ -296,10 +291,9 @@
 
   const openChat = async (event) => {
     chatType = event.detail.type;
-    console.log(event.detail);
+
     // setting colors for active chats
     if (activeChat) {
-      console.log(activeChat);
       document.getElementById(activeChat).style.backgroundColor = "#111b21";
     }
     activeChat = `sidebar-${
@@ -327,7 +321,7 @@
 
   const updateSideBarChats = (new_chat) => {
     let updated = false;
-    console.log(new_chat);
+
     chatList.forEach((chat) => {
       if (chat.type == "single_chat") {
         if (
@@ -366,7 +360,7 @@
             msg_timeago: format(new_chat.msg_time),
             type: actualChat.type,
           };
-          console.log("Updt", updated_data);
+
           updated = true;
           temp_chatList.splice(index, 1);
           temp_chatList.unshift(updated_data);
@@ -401,7 +395,7 @@
               : actualChat.unread_count;
 
           updated = true;
-          console.log("Updt", updated_data);
+
           updated = true;
           temp_chatList.splice(index, 1);
           temp_chatList.unshift(updated_data);
@@ -479,7 +473,6 @@
 
       conv_data.msg_sender = conv_data.sender_data;
 
-      console.log(conv_data);
       conversations = [...conversations, conv_data];
 
       let chatlist_node = document.getElementById("chat_con");
@@ -493,9 +486,8 @@
 
       const sendReadReceipt = () => {
         let dt = new Date();
-        console.log(type);
+
         if (type == "single_chat") {
-          console.log("sent single chat read receipt");
           handleMsgRead(conv_data, direction);
           msg_socket.send(
             JSON.stringify({
@@ -506,7 +498,6 @@
           );
           document.removeEventListener("mousemove", sendReadReceipt);
         } else {
-          console.log("sent group chat read receipt");
           handleMsgRead(conv_data, direction, "group");
           msg_socket.send(
             JSON.stringify({
@@ -529,22 +520,19 @@
           document.addEventListener("mousemove", sendReadReceipt);
         } else if (openedChatData.group_id == conv_data.group_data.group_id) {
           type = "group_chat";
-          console.log("Group read receipt...");
+
           document.addEventListener("mousemove", sendReadReceipt);
         }
       }
     } else {
-      console.log("Listening for read receipt");
       msg_socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("Message status changed", data);
         handleMsgRead(data, direction);
       };
     }
   };
 
   const handleMsgRead = (event, direction, type = "single_chat") => {
-    console.log(event, "dir:", direction);
     if (direction == "outbound") {
       let chat_index = conversations.length - 1;
 
@@ -557,7 +545,6 @@
 
       let temp = conversations;
       for (let j = 0; j < temp.length; j++) {
-        console.log(temp[j]);
         if (temp[j].type == "single_chat") {
           temp[j].msg_status = "RD";
           if (j == chat_index) {
@@ -588,7 +575,6 @@
             chatList[index] = updated;
           }
         } else {
-          console.log("ch", chat);
           if (chat.group_data.group_id == event.group_id) {
             let index = chatList.indexOf(chat);
             let c = chatList[index];

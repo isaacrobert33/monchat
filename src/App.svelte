@@ -419,6 +419,7 @@
                 new_chat.direction == "inbound" ? fTime : new_chat.msg_time,
               direction: new_chat.direction,
               unread_count: new_chat.direction == "inbound" ? 1 : 0,
+              msg_status: new_chat.msg_status,
               type: new_chat.type,
             }
           : {
@@ -432,9 +433,10 @@
                 new_chat.direction == "inbound" ? fTime : new_chat.msg_time,
               direction: new_chat.direction,
               unread_count: new_chat.direction == "inbound" ? 1 : 0,
+              msg_status: new_chat.msg_status,
               type: new_chat.type,
             };
-
+      console.log("cd", chat_data);
       let tcl = chatList;
       tcl.unshift(chat_data);
 
@@ -444,6 +446,7 @@
 
   var msg_socket;
   const handleNewMsg = (event, direction = "outbound") => {
+    console.log(event.detail);
     updateSideBarChats(event.detail);
     let conv_data = event.detail;
 

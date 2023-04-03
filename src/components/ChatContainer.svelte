@@ -13,7 +13,7 @@
   export let chat_recipient_data;
   export let chat_profile_status;
   export let conversation_list = [];
-  export let type;
+  export let type = "single_chat";
 
   let group_members;
   if (type != "single_chat") {
@@ -56,6 +56,7 @@
       msg_sender: user_data.user_name,
       msg_recipient: chat_recipient_data.user_name,
       msg_status: "UD",
+      type: "single_chat",
     };
 
     chat_socket.onopen = (e) => {
@@ -102,6 +103,7 @@
       msg_sender: user_data.user_name,
       group_id: chat_recipient_data.group_id,
       msg_status: "UD",
+      type: "group_chat",
     };
 
     chat_socket.onopen = (e) => {

@@ -544,7 +544,7 @@
   };
 
   const handleMsgRead = (event, direction, type = "single_chat") => {
-    console.log(event);
+    console.log(event, "dir:", direction);
     if (direction == "outbound") {
       let chat_index = conversations.length - 1;
 

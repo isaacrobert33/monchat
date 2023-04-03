@@ -24,7 +24,6 @@
   }
 
   function deleteText(index) {
-    console.log("Deleting text...");
     conversation_list = conversation_list.filter((e, i) => i !== index);
   }
 
@@ -85,7 +84,6 @@
   };
 
   const groupChatSetup = (msg_input) => {
-    console.log("recp", chat_recipient_data);
     let socket_url = `ws://127.0.0.1:8000/ws/group/${chat_recipient_data.group_id}/`;
     var chat_socket = new WebSocket(socket_url);
     const date = new Date();
@@ -110,7 +108,6 @@
       msg_data.msg_time = date.toISOString();
       msg_data.msg_timeago = format(date.toISOString());
       msg_data.direction = "inbound";
-      console.log("Sending", msg_data);
       chat_socket.send(JSON.stringify(msg_data));
       chat_socket.close();
     };
@@ -159,10 +156,9 @@
         console.log("SOCKET OPENED FOR READ RECEIPT");
 
         if (last_msg.direction == "outbound") {
-          console.log("Listening for read receipts...");
           msg_socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log("Message status changed", data);
+
             conversation_list.forEach((chat) => {
               if (chat.msg_id === data.msg_id) {
                 conversation_list[conversation_list.indexOf(chat)].msg_status =
@@ -173,7 +169,7 @@
         } else {
           if (last_msg.msg_status !== "RD" && last_msg.direction == "inbound") {
             let dt = new Date();
-            console.log("sent read receipt");
+
             dispatch("messageread", last_msg);
             msg_socket.send(
               JSON.stringify({
@@ -250,7 +246,6 @@
   const startRecording = (e) => {
     if (mediaRecorder) {
       mediaRecorder.start();
-      console.log("Started recording...");
     } else {
       alert("Error intializing mic");
     }
@@ -259,7 +254,6 @@
   const stopRecording = (e) => {
     if (mediaRecorder) {
       mediaRecorder.stop();
-      console.log("Stoped recording...", audioChunks);
     } else {
       alert("Error intializing mic");
     }
@@ -277,7 +271,6 @@
 
     if (!typingState) {
       typingState = true;
-      console.log("Typing:", typingState);
 
       let data = JSON.stringify({
         typing: typingState,
@@ -286,11 +279,8 @@
 
       dispatch("typing", data);
 
-      console.log("setting time out");
-
       setTimeout(function (e) {
         typingState = false;
-        console.log("Typing:", typingState);
         let data = JSON.stringify({
           typing: typingState,
           user_name: user_data.user_name,

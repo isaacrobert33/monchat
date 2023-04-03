@@ -109,7 +109,6 @@
         sidebar = "chats";
       }}
       on:groupcreate={(e) => {
-        console.log("new group", e.detail);
         dispatch("newgroup", { ...e.detail });
       }}
     />

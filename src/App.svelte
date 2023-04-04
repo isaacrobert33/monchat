@@ -8,7 +8,7 @@
 
   export let name;
 
-  const host = "http://127.0.0.1:8000/monchat";
+  const host = "http://monchat.pythonanywhere.com/monchat";
 
   let user_id = window.localStorage.getItem("monchat_user_id");
   var user_data = {};

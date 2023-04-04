@@ -13,7 +13,7 @@
   export let user_data;
 
   const dispatch = createEventDispatcher();
-  const host = "http://127.0.0.1:8000";
+  const host = "http://monchat.pythonanywhere.com";
 
   let originalChatList = [];
   $: if (!originalChatList.length > 0) {

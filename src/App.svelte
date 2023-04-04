@@ -19,7 +19,7 @@
   var groupSockets = {};
   const initializeGroupSocket = (groups) => {
     for (let i = 0; i < groups.length; i++) {
-      let socket_url = `ws://127.0.0.1:8000/ws/group/${groups[i]}/`;
+      let socket_url = `ws://monchat.pythonanywhere.com/ws/group/${groups[i]}/`;
       let group_socket = new WebSocket(socket_url);
 
       group_socket.onopen = (e) => {
@@ -47,7 +47,7 @@
 
   const initialize_socket = () => {
     ////// Initialize self socket
-    let socket_url = `ws://127.0.0.1:8000/ws/chat/${user_data.user_id}/`;
+    let socket_url = `ws://monchat.pythonanywhere.com/ws/chat/${user_data.user_id}/`;
     let chat_socket = new WebSocket(socket_url);
 
     chat_socket.onopen = (e) => {
@@ -65,7 +65,7 @@
     };
 
     ///// Initializing online status socket
-    let online_socket_url = `ws://127.0.0.1:8000/ws/online/`;
+    let online_socket_url = `ws://monchat.pythonanywhere.com/ws/online/`;
     let online_socket = new WebSocket(online_socket_url);
 
     online_socket.onopen = function (e) {
@@ -117,7 +117,7 @@
       }
     };
 
-    let typing_url = `ws://127.0.0.1:8000/ws/typing/`;
+    let typing_url = `ws://monchat.pythonanywhere.com/ws/typing/`;
     typing_socket = new WebSocket(typing_url);
 
     typing_socket.onclose = function (e) {
@@ -243,7 +243,7 @@
   };
 
   const execLastMsgAction = (last_msg) => {
-    let surl = `ws://127.0.0.1:8000/ws/read_reciept/${last_msg.msg_id}/`;
+    let surl = `ws://monchat.pythonanywhere.com/ws/read_reciept/${last_msg.msg_id}/`;
     let last_msg_socket = new WebSocket(surl);
 
     last_msg_socket.onclose = (e) => {
@@ -455,7 +455,7 @@
     }
 
     msg_socket = new WebSocket(
-      `ws://127.0.0.1:8000/ws/read_reciept/${conv_data.msg_id}/`
+      `ws://monchat.pythonanywhere.com/ws/read_reciept/${conv_data.msg_id}/`
     );
     msg_socket.onopen = (e) => {
       console.log("SOCKET OPENED FOR READ RECEIPT -", conv_data.msg_id);

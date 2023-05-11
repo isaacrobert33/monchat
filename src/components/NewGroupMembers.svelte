@@ -7,7 +7,7 @@
 
   var users = [];
 
-  const host = "http://monchat.pythonanywhere.com";
+  const host = "http://127.0.0.1:8000";
   const dispatch = createEventDispatcher();
   var users4group = [];
   async function getUsers() {

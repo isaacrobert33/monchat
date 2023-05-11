@@ -1,6 +1,5 @@
 <script>
   import axios from "axios";
-  import { onMount } from "svelte";
   import { format } from "timeago.js";
   import ChatContainer from "./components/ChatContainer.svelte";
   import ListContainer from "./components/ListContainer.svelte";
@@ -8,7 +7,7 @@
 
   export let name;
 
-  const host = "http://monchat.pythonanywhere.com/monchat";
+  const host = "http://127.0.0.1:8000/monchat";
 
   let user_id = window.localStorage.getItem("monchat_user_id");
   var user_data = {};
@@ -19,7 +18,7 @@
   var groupSockets = {};
   const initializeGroupSocket = (groups) => {
     for (let i = 0; i < groups.length; i++) {
-      let socket_url = `ws://monchat.pythonanywhere.com/ws/group/${groups[i]}/`;
+      let socket_url = `ws://127.0.0.1:8000/ws/group/${groups[i]}/`;
       let group_socket = new WebSocket(socket_url);
 
       group_socket.onopen = (e) => {
@@ -44,10 +43,22 @@
   };
 
   let typing_socket;
+  var online_socket;
+
+  const handleLogout = () => {
+    let dt = new Date();
+    online_socket.send(
+      JSON.stringify({
+        user_name: user_data.user_name,
+        type: "offline",
+        time: dt.toISOString(),
+      })
+    );
+  };
 
   const initialize_socket = () => {
     ////// Initialize self socket
-    let socket_url = `ws://monchat.pythonanywhere.com/ws/chat/${user_data.user_id}/`;
+    let socket_url = `ws://127.0.0.1:8000/ws/chat/${user_data.user_id}/`;
     let chat_socket = new WebSocket(socket_url);
 
     chat_socket.onopen = (e) => {
@@ -65,8 +76,8 @@
     };
 
     ///// Initializing online status socket
-    let online_socket_url = `ws://monchat.pythonanywhere.com/ws/online/`;
-    let online_socket = new WebSocket(online_socket_url);
+    let online_socket_url = `ws://127.0.0.1:8000/ws/online/`;
+    online_socket = new WebSocket(online_socket_url);
 
     online_socket.onopen = function (e) {
       console.log("CONNECTED TO ONLINE CONSUMER");
@@ -117,7 +128,7 @@
       }
     };
 
-    let typing_url = `ws://monchat.pythonanywhere.com/ws/typing/`;
+    let typing_url = `ws://127.0.0.1:8000/ws/typing/`;
     typing_socket = new WebSocket(typing_url);
 
     typing_socket.onclose = function (e) {
@@ -243,7 +254,7 @@
   };
 
   const execLastMsgAction = (last_msg) => {
-    let surl = `ws://monchat.pythonanywhere.com/ws/read_reciept/${last_msg.msg_id}/`;
+    let surl = `ws://127.0.0.1:8000/ws/read_reciept/${last_msg.msg_id}/`;
     let last_msg_socket = new WebSocket(surl);
 
     last_msg_socket.onclose = (e) => {
@@ -455,7 +466,7 @@
     }
 
     msg_socket = new WebSocket(
-      `ws://monchat.pythonanywhere.com/ws/read_reciept/${conv_data.msg_id}/`
+      `ws://127.0.0.1:8000/ws/read_reciept/${conv_data.msg_id}/`
     );
     msg_socket.onopen = (e) => {
       console.log("SOCKET OPENED FOR READ RECEIPT -", conv_data.msg_id);
@@ -642,6 +653,7 @@
       on:chatclick={openChat}
       on:newchat={handleNewChat}
       on:newgroup={handleNewGroup}
+      on:logout={handleLogout}
     />
   {/if}
   {#if openedChatData}

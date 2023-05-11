@@ -4,7 +4,7 @@
 
   export let user_data;
 
-  const host = "http://monchat.pythonanywhere.com";
+  const host = "http://127.0.0.1:8000";
   const dispatch = createEventDispatcher();
 
   var userSearchQ;

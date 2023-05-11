@@ -5,7 +5,7 @@
   let sign_in = true;
   let sign_up = false;
   let pwd_reset = false;
-  const host = "http://monchat.pythonanywhere.com/monchat";
+  const host = "http://127.0.0.1:8000/monchat";
 
   const dispatch = createEventDispatcher();
 

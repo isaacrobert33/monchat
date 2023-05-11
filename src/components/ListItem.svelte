@@ -19,7 +19,7 @@
   export let type = "single_chat";
   export let typing = false;
 
-  var host = "http://monchat.pythonanywhere.com";
+  var host = "http://127.0.0.1:8000";
 </script>
 
 {#if type == "single_chat"}

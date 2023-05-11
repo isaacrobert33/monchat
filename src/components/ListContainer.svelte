@@ -13,7 +13,7 @@
   export let user_data;
 
   const dispatch = createEventDispatcher();
-  const host = "http://monchat.pythonanywhere.com";
+  const host = "http://127.0.0.1:8000";
 
   let originalChatList = [];
   $: if (!originalChatList.length > 0) {
@@ -78,6 +78,9 @@
       }}
       on:newgroup={(e) => {
         sidebar = "new_group_choice";
+      }}
+      on:logout={(e) => {
+        dispatch("logout", {});
       }}
     />
   {:else if sidebar == "users"}

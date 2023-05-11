@@ -6,7 +6,7 @@
   export let user_data;
   export let members;
 
-  const host = "http://monchat.pythonanywhere.com";
+  const host = "http://127.0.0.1:8000";
   const dispatch = createEventDispatcher();
 
   async function uploadGroupIcon(group) {

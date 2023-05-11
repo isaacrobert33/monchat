@@ -7,7 +7,7 @@
   export let chatList;
   export let originalChatList;
 
-  const host = "http://monchat.pythonanywhere.com";
+  const host = "http://127.0.0.1:8000";
   const dispatch = createEventDispatcher();
 
   function handleChatClick(chat) {
@@ -80,6 +80,7 @@
   function logout(e) {
     window.localStorage.setItem("monchat_user_id", "");
     window.location.reload();
+    dispatch("logout", {});
   }
 
   let chatSearchQ = "";

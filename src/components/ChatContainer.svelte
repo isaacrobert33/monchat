@@ -6,7 +6,7 @@
   import { v4 as uuidv4 } from "uuid";
   import axios from "axios";
 
-  var host = "http://monchat.pythonanywhere.com";
+  var host = "http://127.0.0.1:8000";
   const dispatch = createEventDispatcher();
 
   export let user_data;
@@ -32,7 +32,7 @@
   }
 
   const singleChatSetup = (msg_input) => {
-    let socket_url = `ws://monchat.pythonanywhere.com/ws/chat/${chat_recipient_data.user_id}/`;
+    let socket_url = `ws://127.0.0.1:8000/ws/chat/${chat_recipient_data.user_id}/`;
     var chat_socket = new WebSocket(socket_url);
 
     const date = new Date();
@@ -85,7 +85,7 @@
   };
 
   const groupChatSetup = (msg_input) => {
-    let socket_url = `ws://monchat.pythonanywhere.com/ws/group/${chat_recipient_data.group_id}/`;
+    let socket_url = `ws://127.0.0.1:8000/ws/group/${chat_recipient_data.group_id}/`;
     var chat_socket = new WebSocket(socket_url);
     const date = new Date();
 
@@ -151,7 +151,7 @@
       (last_msg && last_msg.msg_status == "DV")
     ) {
       var msg_socket = new WebSocket(
-        `ws://monchat.pythonanywhere.com/ws/read_reciept/${last_msg.msg_id}/`
+        `ws://127.0.0.1:8000/ws/read_reciept/${last_msg.msg_id}/`
       );
 
       msg_socket.onopen = (e) => {

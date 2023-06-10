@@ -7,7 +7,7 @@
   export let type;
   export let msg_sender;
 
-  var host = "http://127.0.0.1:8000";
+  var host = process.env.API_URL;
 </script>
 
 {#if direction === "outbound"}

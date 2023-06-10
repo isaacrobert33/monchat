@@ -6,7 +6,7 @@
   import { v4 as uuidv4 } from "uuid";
   import axios from "axios";
 
-  var host = "http://127.0.0.1:8000";
+  var host = process.env.API_URL;
   const dispatch = createEventDispatcher();
 
   export let user_data;

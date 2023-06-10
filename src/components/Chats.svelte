@@ -7,7 +7,7 @@
   export let chatList;
   export let originalChatList;
 
-  const host = "http://127.0.0.1:8000";
+  const host = process.env.API_URL;
   const dispatch = createEventDispatcher();
 
   function handleChatClick(chat) {

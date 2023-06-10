@@ -5,7 +5,7 @@
   let sign_in = true;
   let sign_up = false;
   let pwd_reset = false;
-  const host = "http://127.0.0.1:8000/monchat";
+  const host = process.env.MONCHAT_URL;
 
   const dispatch = createEventDispatcher();
 

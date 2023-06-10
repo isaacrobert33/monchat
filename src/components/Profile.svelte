@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
 
   export let user_data;
-  const host = "http://127.0.0.1:8000";
+  const host = process.env.API_URL;
   const dispatch = createEventDispatcher();
 
   async function upload() {

@@ -19,7 +19,7 @@
   export let type = "single_chat";
   export let typing = false;
 
-  var host = "http://127.0.0.1:8000";
+  var host = process.env.API_URL;
 </script>
 
 {#if type == "single_chat"}

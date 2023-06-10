@@ -7,7 +7,7 @@
 
   var users = [];
 
-  const host = "http://127.0.0.1:8000";
+  const host = process.env.API_URL;
   const dispatch = createEventDispatcher();
   var users4group = [];
   async function getUsers() {
